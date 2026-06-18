@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Qoder 工作草稿（保留 .gitkeep）
+.qoder/specs/*.md
+!.qoder/specs/.gitkeep
+
+# 用户上传数据
+data/*
+!data/examples/
+!data/examples/.gitkeep
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# OS 文件
+.DS_Store
+Thumbs.db
+
+# 参考文件（Stata 原始代码，仅本地保留）
+references/
+
