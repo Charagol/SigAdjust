@@ -1,113 +1,131 @@
-"""Page 4: Results display — baseline vs adjusted metrics, charts, export."""
+"""Page 4: Results display -- single-model + multi-model analysis."""
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
 
 def page_results():
-    """Results display page. Shows t-value curves, deletion path, and export."""
     st.title("结果展示")
 
     if "results" not in st.session_state or st.session_state.results is None:
-        st.warning("尚无计算结果。请先在 **模型设定** 页面启动分析。")
+        st.warning("尚无计算结果。请先在模型设定页面启动分析。")
         return
 
     results = st.session_state.results
     config = st.session_state.config
     models = results.get("models", {})
+    multi = results.get("multi_model")
 
     if not models:
         st.info("当前没有模型结果。")
         return
 
-    # ── Show results for the first model (single-model for now)
-    model_name = list(models.keys())[0]
-    model_result = models[model_name]
+    tabs = ["单模型结果"]
+    if multi:
+        tabs.append("多模型联动")
 
-    baseline = model_result.get("baseline", {})
-    final = model_result.get("final", {})
-    deletion_path = model_result.get("deletion_path", [])
-    spec_curves = model_result.get("spec_curves", [])
+    tab_objs = st.tabs(tabs)
 
-    # ── Summary metrics ───────────────────────────────────────────────
-    st.subheader("摘要")
+    # ── Tab 1: Single-model results ───────────────────────────────────
+    with tab_objs[0]:
+        for model_name, model_result in models.items():
+            if not model_result or not model_result.get("baseline"):
+                continue
+            st.subheader(model_name)
+            baseline = model_result.get("baseline", {})
+            final = model_result.get("final", {})
+            deletion_path = model_result.get("deletion_path", [])
+            spec_curves = model_result.get("spec_curves", [])
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("基线 t 值", f"{baseline.get('t_stat', 0):.4f}",
-              delta=f"{final.get('t_stat', 0):.4f}" if final else None)
-    c2.metric("基线 p 值", f"{baseline.get('p_value', 0):.4f}",
-              delta=f"{final.get('p_value', 0):.4f}" if final else None,
-              delta_color="inverse")
-    c3.metric("R²", f"{baseline.get('r_squared', 0):.4f}",
-              delta=f"{final.get('r_squared', 0):.4f}" if final else None)
-    c4.metric("删除观测值", f"{final.get('n_deleted', 0)}", delta=None)
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("基线 t 值", f"{baseline.get('t_stat', 0):.4f}", delta=f"{final.get('t_stat', 0):.4f}" if final else None)
+            c2.metric("基线 p 值", f"{baseline.get('p_value', 0):.4f}", delta=f"{final.get('p_value', 0):.4f}" if final else None, delta_color="inverse")
+            c3.metric("R²", f"{baseline.get('r_squared', 0):.4f}", delta=f"{final.get('r_squared', 0):.4f}" if final else None)
+            c4.metric("删除观测值", f"{final.get('n_deleted', 0)}", delta=None)
 
-    # ── t-value curve ─────────────────────────────────────────────────
-    if spec_curves:
-        st.subheader("t 值变化曲线")
-        threshold = config.get("global_settings", {}).get("significance_threshold", 0.05)
+            if spec_curves:
+                fig = go.Figure()
+                for curve in spec_curves:
+                    path = curve.get("path", [])
+                    n_del = [p["n_del"] for p in path]
+                    t_vals = [abs(p["t"]) for p in path]
+                    fig.add_trace(go.Scatter(x=n_del, y=t_vals, mode="lines+markers", name=curve.get("control_set", "")))
+                fig.add_hline(y=1.96, line_dash="dash", line_color="red", annotation_text="p≈0.05")
+                fig.update_layout(xaxis_title="删除数量", yaxis_title="|t 值|", hovermode="x unified", height=350)
+                st.plotly_chart(fig, use_container_width=True)
 
-        fig = go.Figure()
+            if deletion_path:
+                st.dataframe(pd.DataFrame(deletion_path), use_container_width=True, hide_index=True)
 
-        for curve in spec_curves:
-            path = curve.get("path", [])
-            n_del = [p["n_del"] for p in path]
-            t_vals = [abs(p["t"]) for p in path]
+            if final and final.get("deleted_obs"):
+                df_export = st.session_state.df.copy()
+                mc = model_name.replace(" ", "_").replace("/", "_")
+                dc = f"drop_{mc}"
+                df_export[dc] = 0
+                for oid in final["deleted_obs"]:
+                    if oid < len(df_export):
+                        df_export.iloc[oid, df_export.columns.get_loc(dc)] = 1
+                csv_data = df_export.to_csv(index=False).encode("utf-8")
+                st.download_button(f"下载 CSV ({model_name})", csv_data, f"sigadjust_{mc}.csv", "text/csv")
 
-            fig.add_trace(go.Scatter(
-                x=n_del,
-                y=t_vals,
-                mode="lines+markers",
-                name=curve.get("control_set", ""),
-            ))
+    # ── Tab 2: Multi-model analysis ───────────────────────────────────
+    if multi and len(tab_objs) > 1:
+        with tab_objs[1]:
+            st.subheader("安全交集与冲突")
+            safe = multi.get("safe_intersection", [])
+            coeff = multi.get("conflict_coefficient", 0)
+            c1, c2 = st.columns(2)
+            c1.metric("安全交集大小", len(safe))
+            c2.metric("冲突系数", f"{coeff:.2f}")
 
-        # Horizontal threshold line (approximate — exact depends on df)
-        fig.add_hline(
-            y=1.96,
-            line_dash="dash",
-            line_color="red",
-            annotation_text="p≈0.05",
-        )
+            cm = multi.get("conflict_matrix", [])
+            if cm:
+                st.subheader("冲突热力图")
+                labels = sorted({k for e in cm for k in e.get("effects", {})})
+                obs_ids = [e["obs_id"] for e in cm]
+                z_data = []
+                for e in cm:
+                    row = []
+                    for lab in labels:
+                        row.append(e.get("effects", {}).get(lab, 0))
+                    z_data.append(row)
 
-        fig.update_layout(
-            xaxis_title="删除数量",
-            yaxis_title="|t 值|",
-            hovermode="x unified",
-            height=400,
-        )
+                fig_heat = go.Figure(data=go.Heatmap(z=z_data, x=labels, y=obs_ids, colorscale="RdBu", zmid=0, text=[[f"{v:.3f}" for v in row] for row in z_data], texttemplate="%{text}"))
+                fig_heat.update_layout(xaxis_title="模型", yaxis_title="观测值 ID", height=400)
+                st.plotly_chart(fig_heat, use_container_width=True)
 
-        st.plotly_chart(fig, use_container_width=True)
+                st.subheader("冲突详情")
+                st.dataframe(pd.DataFrame(cm), use_container_width=True, hide_index=True)
 
-    # ── Deletion path table ───────────────────────────────────────────
-    if deletion_path:
-        st.subheader("删除路径")
-        path_df = pd.DataFrame(deletion_path)
-        st.dataframe(path_df, use_container_width=True, hide_index=True)
+            # Pareto overlay: all models t-value vs n_deleted
+            st.subheader("帕累托曲线")
+            fig_pareto = go.Figure()
+            for mname, mres in models.items():
+                sc = mres.get("spec_curves", [])
+                for curve in sc:
+                    path = curve.get("path", [])
+                    n_del = [p["n_del"] for p in path]
+                    t_vals = [abs(p["t"]) for p in path]
+                    fig_pareto.add_trace(go.Scatter(x=n_del, y=t_vals, mode="lines+markers", name=mname))
+            fig_pareto.add_hline(y=1.96, line_dash="dash", line_color="gray")
+            fig_pareto.update_layout(xaxis_title="删除数量", yaxis_title="|t 值|", height=400)
+            st.plotly_chart(fig_pareto, use_container_width=True)
 
-    # ── Export ────────────────────────────────────────────────────────
-    if final and final.get("deleted_obs"):
-        st.subheader("导出")
+            # Status matrix
+            st.subheader("模型达标状态")
+            sbm = multi.get("status_by_model", {})
+            if sbm:
+                st.dataframe(pd.DataFrame(sbm).T, use_container_width=True)
 
-        df = st.session_state.df.copy()
-        model_name_clean = model_name.replace(" ", "_").replace("/", "_")
-        drop_col = f"drop_{model_name_clean}"
-
-        # Build drop flag column
-        df[drop_col] = 0
-        for obs_id in final["deleted_obs"]:
-            if obs_id < len(df):
-                df.iloc[obs_id, df.columns.get_loc(drop_col)] = 1
-
-        st.session_state.export_df = df
-
-        csv_data = df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label=f"下载 CSV ({len(df)} 行, {df.shape[1]} 列)",
-            data=csv_data,
-            file_name=f"sigadjust_{model_name_clean}.csv",
-            mime="text/csv",
-        )
-
-        st.caption(f"已添加标识符列 `{drop_col}`: 1 = 建议删除, 0 = 保留")
+            # Export with drop_all_safe
+            if safe:
+                df_all = st.session_state.df.copy()
+                df_all["drop_all_safe"] = 0
+                for oid in safe:
+                    if oid < len(df_all):
+                        df_all.iloc[oid, df_all.columns.get_loc("drop_all_safe")] = 1
+                csv_safe = df_all.to_csv(index=False).encode("utf-8")
+                st.download_button("下载 CSV (含 drop_all_safe)", csv_safe, "sigadjust_multi.csv", "text/csv")

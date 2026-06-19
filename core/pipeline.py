@@ -75,7 +75,12 @@ def run_pipeline(compute_input: dict) -> dict:
                 "spec_curves": [],
             }
 
+    multi = None
+    if len(models_config) > 1:
+        from core.multi_model import arbitrate
+        multi = arbitrate(results, models_config, df)
+
     return {
         "models": results,
-        "multi_model": None,  # Placeholder for Phase 6
+        "multi_model": multi,
     }
