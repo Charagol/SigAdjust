@@ -20,6 +20,7 @@
 - **每个 Phase 独立提交**。不在多个 Phase 完成后批量提交。一个 Phase 的前后端紧密关联改动合并为一次提交。
 - **前置清理单独提交**（如重命名目录、删除残留文件）。
 - **task-tracker 更新随 Phase 代码一起提交**，不单独拆出来。
+- **提交前清理锁**: 若 git 操作报 `index.lock` 存在或 `Permission denied`，先执行 `rm -f .git/index.lock` 再重试。不要跳过提交。
 - **提交前确认** `pytest tests/ -v` 全部通过。
 
 ## 文档更新规则
