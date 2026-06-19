@@ -8,14 +8,14 @@
 | 版本标记 | 每次更新在"最近变更摘要区"记录日期、变更人、变更内容 |
 | 接口契约 | "核心接口签名区"中的函数签名是 core↔ui 的硬边界，修改须评审 |
 | 规则溯源 | "业务逻辑核心规则区"中的每条规则须标注源自技术文档的节号 |
-| 清理时机 | 每个 Phase 结束时清理对应的 .qoder/specs/ 工作草稿 |
+| 清理时机 | 每个 Phase 结束时清理对应的 .codex/plans/ 工作草稿 |
 
 ---
 
 ## V1.0 版本信息
 
 - **版本**: V1.0-alpha
-- **状态**: Phase 0 已完成，准备进入 Phase 1
+| 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 - **创建日期**: 2026-06-18
 - **目标发布日期**: TBD
 
@@ -26,9 +26,9 @@
 | Phase | 名称 | 状态 | 开始日期 | 完成日期 | 备注 |
 |-------|------|------|---------|---------|------|
 | 0 | 项目初始化 | 已完成 | 2026-06-18 | 2026-06-18 | 12 个文件 (references/ 由 .gitignore 排除) |
-| 1 | 数据导入页面 | 待开始 | — | — | page_data.py + validation.py |
-| 2 | OLS 核心计算 | 待开始 | — | — | spec_enum, ols_model, influence, greedy |
-| 3 | OLS 全流程 | 待开始 | — | — | page_setup, page_progress, page_results |
+| 1 | 数据导入页面 | 已完成 | 2026-06-20 | 2026-06-20 | page_data.py, validation.py, 10 tests | — | — | page_data.py + validation.py |
+| 2 | OLS 核心计算 | 已完成 | 2026-06-20 | 2026-06-20 | spec_enum, ols_model, influence, greedy_search, pipeline, 14 tests | — | — | spec_enum, ols_model, influence, greedy |
+| 3 | OLS 全流程 UI | 已完成 | 2026-06-20 | 2026-06-20 | page_setup, page_progress, page_results, app.py 修改 |
 | 4 | Logit/Probit 支持 | 待开始 | — | — | logit_model.py |
 | 5 | 固定效应支持 | 待开始 | — | — | fe_model.py（pyfixest + FWL 退化） |
 | 6 | 多模型联动 | 待开始 | — | — | multi_model.py, 冲突矩阵, 安全交集 |
@@ -93,5 +93,7 @@
 
 | 日期 | 变更人 | Phase | 变更内容 |
 |------|--------|-------|---------|
+| 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 | 2026-06-18 | Qoder | 0 | 项目初始化: 创建任务追踪器、目录骨架、依赖清单 |
+| 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 | 2026-06-18 | Qoder | 0 | Phase 0 完成: 12 个文件、pytest 验证通过、Git 仓库初始化、references/ 加入 .gitignore |
