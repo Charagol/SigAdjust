@@ -33,8 +33,8 @@
 | 4 | Logit/Probit 支持 | 已完成 | 2026-06-20 | 2026-06-20 | logit_model.py, 6 tests, pipeline routing | — | — | logit_model.py |
 | 5 | 固定效应支持 | 已完成 | 2026-06-20 | 2026-06-20 | fe_model.py (FWL), 3 tests, UI model selector, pyfixest | — | — | fe_model.py（pyfixest + FWL 退化） |
 | 6 | 多模型联动 | 已完成 | 2026-06-20 | 2026-06-20 | multi_model.py (11 tests), pipeline+UI, 44 total | — | — | multi_model.py, 冲突矩阵, 安全交集 |
-| 7 | 2SLS/IV 支持 | 待开始 | — | — | iv_model.py（CFA 分解） |
-| 8 | 导出 + 部署 | 待开始 | — | — | export.py, README, 可选 Docker |
+| 7 | 2SLS/IV 支持 | 已完成 | 2026-06-20 | 2026-06-20 | iv_model.py (4 tests), CFA strategy, pipeline+UI | — | — | iv_model.py（CFA 分解） |
+| 8 | 导出 + 部署 | 已完成 | 2026-06-20 | 2026-06-20 | export.py (4 formats), README.md, UI wired | — | — | export.py, README, 可选 Docker |
 
 ---
 

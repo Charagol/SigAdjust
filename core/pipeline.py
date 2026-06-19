@@ -55,6 +55,19 @@ def run_pipeline(compute_input: dict) -> dict:
                 model_type=model_type,
             )
             results[name] = result
+        elif model_type == "iv":
+            from core.models.iv_model import run_iv_greedy
+            result = run_iv_greedy(
+                df=df,
+                dependent_var=model_cfg["dependent_var"],
+                key_var=model_cfg["key_var"],
+                control_vars=model_cfg.get("control_vars", []),
+                endogenous_var=model_cfg.get("endogenous_var", model_cfg["key_var"]),
+                instruments=model_cfg.get("instruments", []),
+                significance_threshold=target_p,
+                max_deletions_pct=max_deletions_pct,
+            )
+            results[name] = result
         elif model_type == "fe":
             from core.models.fe_model import run_fe_greedy
             result = run_fe_greedy(

@@ -37,7 +37,7 @@ def page_setup():
             st.rerun()
 
     models_config = []
-    type_map = {"OLS": "ols", "Logit": "logit", "Probit": "probit", "FE (固定效应)": "fe"}
+    type_map = {"OLS": "ols", "Logit": "logit", "Probit": "probit", "FE (固定效应)": "fe", "2SLS": "iv"}
     total_combos = 0
 
     for i in range(st.session_state.model_count):
@@ -48,12 +48,17 @@ def page_setup():
             kv = st.selectbox(f"核心解释变量", numeric_cols, key=f"kv_{i}")
             cv = st.multiselect(f"控制变量", [c for c in col_names if c not in [dv, kv]], key=f"cv_{i}")
             fv = []
+            ev = ""
+            iv_list = []
             if mtype == "FE (固定效应)":
                 fv = st.multiselect(f"固定效应变量", [c for c in col_names if c not in [dv, kv] + cv], key=f"fv_{i}")
+            if mtype == "2SLS":
+                ev = st.selectbox(f"内生变量", numeric_cols, key=f"ev_{i}")
+                iv_list = st.multiselect(f"工具变量 (至少1个)", [c for c in col_names if c not in [dv, ev] + cv], key=f"iv_{i}")
             pri = st.slider("优先级", 1, 5, 5, key=f"pri_{i}", help="5=最高优先级")
             tp = st.number_input(f"目标 p 值", value=p_threshold, min_value=0.001, max_value=0.50, step=0.01, key=f"tp_{i}")
 
-            models_config.append({"name": mname, "type": type_map[mtype], "priority": pri, "target_p": tp, "dependent_var": dv, "key_var": kv, "control_vars": cv, "fe_vars": fv})
+            models_config.append({"name": mname, "type": type_map[mtype], "priority": pri, "target_p": tp, "dependent_var": dv, "key_var": kv, "control_vars": cv, "fe_vars": fv, "endogenous_var": ev, "instruments": iv_list})
             if cv:
                 total_combos += 2 ** len(cv) - 1
 

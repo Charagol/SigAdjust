@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
+from core.export import export_csv, export_dta, export_excel, export_html, export_multi_csv
 
 
 def page_results():
@@ -57,19 +58,29 @@ def page_results():
                 fig.update_layout(xaxis_title="删除数量", yaxis_title="|t 值|", hovermode="x unified", height=350)
                 st.plotly_chart(fig, use_container_width=True)
 
+            f_curve = model_result.get("f_curve")
+            if f_curve:
+                st.caption("第一阶段 F 统计量 (工具强度)")
+                fig_f = go.Figure()
+                ndf = [p["n_del"] for p in f_curve]
+                fv = [p["f"] for p in f_curve]
+                fig_f.add_trace(go.Scatter(x=ndf, y=fv, mode="lines+markers", name="F"))
+                fig_f.add_hline(y=10, line_dash="dash", line_color="orange", annotation_text="F=10")
+                fig_f.update_layout(xaxis_title="删除数量", yaxis_title="F 统计量", height=250)
+                st.plotly_chart(fig_f, use_container_width=True)
+
             if deletion_path:
                 st.dataframe(pd.DataFrame(deletion_path), use_container_width=True, hide_index=True)
 
             if final and final.get("deleted_obs"):
-                df_export = st.session_state.df.copy()
+                deleted = final.get("deleted_obs", [])
                 mc = model_name.replace(" ", "_").replace("/", "_")
-                dc = f"drop_{mc}"
-                df_export[dc] = 0
-                for oid in final["deleted_obs"]:
-                    if oid < len(df_export):
-                        df_export.iloc[oid, df_export.columns.get_loc(dc)] = 1
-                csv_data = df_export.to_csv(index=False).encode("utf-8")
-                st.download_button(f"下载 CSV ({model_name})", csv_data, f"sigadjust_{mc}.csv", "text/csv")
+                raw = st.session_state.df.copy()
+                ec1, ec2, ec3, ec4 = st.columns(4)
+                ec1.download_button("下载 CSV", export_csv(raw, deleted, model_name), f"sigadjust_{mc}.csv", "text/csv")
+                ec2.download_button("下载 DTA", export_dta(raw, deleted, model_name), f"sigadjust_{mc}.dta", "application/octet-stream")
+                ec3.download_button("下载 Excel", export_excel(raw, deleted, model_name, baseline, deletion_path), f"sigadjust_{mc}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                ec4.download_button("下载 HTML", export_html(raw, deleted, model_name, [], baseline, deletion_path), f"sigadjust_{mc}.html", "text/html")
 
     # ── Tab 2: Multi-model analysis ───────────────────────────────────
     if multi and len(tab_objs) > 1:
@@ -127,5 +138,4 @@ def page_results():
                 for oid in safe:
                     if oid < len(df_all):
                         df_all.iloc[oid, df_all.columns.get_loc("drop_all_safe")] = 1
-                csv_safe = df_all.to_csv(index=False).encode("utf-8")
-                st.download_button("下载 CSV (含 drop_all_safe)", csv_safe, "sigadjust_multi.csv", "text/csv")
+                st.download_button("下载 CSV (drop_all_safe)", export_multi_csv(st.session_state.df, safe), "sigadjust_multi.csv", "text/csv")
