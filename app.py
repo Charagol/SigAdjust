@@ -1,5 +1,4 @@
-"""
-显著性调整工具 (Significance Adjustment Tool)
+"""显著性调整工具 (Significance Adjustment Tool)
 ==============================================
 一键式回归诊断与样本优化 Web 应用。
 
@@ -18,36 +17,10 @@
 
 import streamlit as st
 
-
-# ── 占位页面函数 ──────────────────────────────────────────
-# Phase 1-3 将替换为 ui/ 模块中的实际页面函数
+from ui.pages import page_data, page_setup, page_progress, page_results
 
 
-def page_data():
-    """数据导入页面 — Phase 1 实现。"""
-    st.title("数据导入")
-    st.info("📂 Phase 1 将实现: 文件上传、数据预览、缺失值统计")
-
-
-def page_setup():
-    """模型设定页面 — Phase 2-3 实现。"""
-    st.title("模型设定")
-    st.info("⚙️ Phase 2-3 将实现: 多模型配置、控制变量枚举、显著性阈值设定")
-
-
-def page_progress():
-    """计算进度页面 — Phase 3 实现。"""
-    st.title("计算进度")
-    st.info("🔄 Phase 3 将实现: 贪心迭代删除、实时进度条、后台线程计算")
-
-
-def page_results():
-    """结果展示页面 — Phase 3 实现。"""
-    st.title("结果展示")
-    st.info("📊 Phase 3 将实现: t 值曲线、删除路径、设定曲线、多模型冲突分析")
-
-
-# ── 页面配置 ──────────────────────────────────────────────
+# ── 页面配置 ─────────────────────────────────────────────────────────
 
 st.set_page_config(
     page_title="显著性调整工具",
@@ -57,7 +30,7 @@ st.set_page_config(
 
 st.title("显著性调整工具")
 
-# ── 导航结构 ──────────────────────────────────────────────
+# ── 导航结构 ─────────────────────────────────────────────────────────
 
 pages = [
     st.Page(page_data, title="数据导入", icon=":material/upload:"),
@@ -68,13 +41,13 @@ pages = [
 
 pg = st.navigation(pages)
 
-# ── 侧边栏 ────────────────────────────────────────────────
+# ── 侧边栏 ───────────────────────────────────────────────────────────
 
 st.sidebar.title("SigAdjust")
 st.sidebar.caption("v1.0.0-alpha")
 st.sidebar.divider()
 st.sidebar.info("一键式回归诊断与样本优化")
 
-# ── 运行导航 ──────────────────────────────────────────────
+# ── 运行导航 ─────────────────────────────────────────────────────────
 
 pg.run()
