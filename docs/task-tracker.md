@@ -18,7 +18,7 @@
 | 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 - **创建日期**: 2026-06-18
-- **目标发布日期**: TBD
+- **目标发布日期**: 2026-06-20
 
 ---
 
@@ -44,7 +44,18 @@
 
 | 模块 | 函数 | 签名 | 说明 | 最后更新 |
 |------|------|------|------|---------|
-| — | — | — | — | — |
+| ols_model | fit_ols | (df, dv, kv, cv) -> dict | Baseline + diagnostics via statsmodels OLS | 2026-06-20 |
+| logit_model | fit_logit | (df, dv, kv, cv, type) -> dict | Logit/Probit fit + one-step Newton diagnostics | 2026-06-20 |
+| logit_model | run_logit_greedy | (df, dv, kv, cv, thresh, max_pct, type, exact) -> dict | Logit/Probit greedy deletion | 2026-06-20 |
+| fe_model | fit_fe | (df, dv, kv, cv, fe_vars) -> dict | FWL demean + OLS diagnostics | 2026-06-20 |
+| fe_model | run_fe_greedy | (df, dv, kv, cv, fe_vars, thresh, max_pct) -> dict | FE greedy deletion | 2026-06-20 |
+| iv_model | fit_iv | (df, dv, kv, cv, endog, instr) -> dict | CFA dual-stage fit | 2026-06-20 |
+| iv_model | run_iv_greedy | (df, dv, kv, cv, endog, instr, thresh, max_pct) -> dict | IV greedy deletion | 2026-06-20 |
+| influence | compute_deletion_t_values | (params_not_obsi, sigma2, XtX_inv_diag, idx) -> ndarray | Post-deletion t-values (OLS) | 2026-06-20 |
+| greedy_search | greedy_deletion | (df, dv, kv, cv, thresh, max_pct) -> dict | OLS single-model greedy loop | 2026-06-20 |
+| pipeline | run_pipeline | (compute_input) -> compute_output | Orchestrator, routes to model-specific functions | 2026-06-20 |
+| multi_model | arbitrate | (results, configs, df) -> dict | Safe intersection + conflict matrix + weighted greedy | 2026-06-20 |
+| export | export_csv/export_dta/export_excel/export_html | (df, deleted_obs, model_name, ...) -> bytes | 4-format export | 2026-06-20 |
 
 ---
 
