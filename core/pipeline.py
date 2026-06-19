@@ -1,7 +1,9 @@
-"""Entry-point pipeline: compute_input → full pipeline → compute_output.
+"""Entry-point pipeline: compute_input -> full pipeline -> compute_output.
 
-Orchestrates the single-model OLS pipeline:
-  spec_enum → ols_model → influence → greedy_search → output dict.
+Orchestrates model-specific pipelines:
+  OLS: greedy_deletion
+  Logit/Probit: run_logit_greedy
+  FE: run_fe_greedy
 """
 
 import pandas as pd
@@ -41,8 +43,31 @@ def run_pipeline(compute_input: dict) -> dict:
                 max_deletions_pct=max_deletions_pct,
             )
             results[name] = result
+        elif model_type in ("logit", "probit"):
+            from core.models.logit_model import run_logit_greedy
+            result = run_logit_greedy(
+                df=df,
+                dependent_var=model_cfg["dependent_var"],
+                key_var=model_cfg["key_var"],
+                control_vars=model_cfg.get("control_vars", []),
+                significance_threshold=target_p,
+                max_deletions_pct=max_deletions_pct,
+                model_type=model_type,
+            )
+            results[name] = result
+        elif model_type == "fe":
+            from core.models.fe_model import run_fe_greedy
+            result = run_fe_greedy(
+                df=df,
+                dependent_var=model_cfg["dependent_var"],
+                key_var=model_cfg["key_var"],
+                control_vars=model_cfg.get("control_vars", []),
+                fe_vars=model_cfg.get("fe_vars", []),
+                significance_threshold=target_p,
+                max_deletions_pct=max_deletions_pct,
+            )
+            results[name] = result
         else:
-            # Placeholder for Phase 4+
             results[name] = {
                 "baseline": None,
                 "deletion_path": [],

@@ -15,6 +15,7 @@
 ## V1.0 版本信息
 
 - **版本**: V1.0-alpha
+| 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 - **创建日期**: 2026-06-18
 - **目标发布日期**: TBD
@@ -29,8 +30,8 @@
 | 1 | 数据导入页面 | 已完成 | 2026-06-20 | 2026-06-20 | page_data.py, validation.py, 10 tests | — | — | page_data.py + validation.py |
 | 2 | OLS 核心计算 | 已完成 | 2026-06-20 | 2026-06-20 | spec_enum, ols_model, influence, greedy_search, pipeline, 14 tests | — | — | spec_enum, ols_model, influence, greedy |
 | 3 | OLS 全流程 UI | 已完成 | 2026-06-20 | 2026-06-20 | page_setup, page_progress, page_results, app.py 修改 |
-| 4 | Logit/Probit 支持 | 待开始 | — | — | logit_model.py |
-| 5 | 固定效应支持 | 待开始 | — | — | fe_model.py（pyfixest + FWL 退化） |
+| 4 | Logit/Probit 支持 | 已完成 | 2026-06-20 | 2026-06-20 | logit_model.py, 6 tests, pipeline routing | — | — | logit_model.py |
+| 5 | 固定效应支持 | 已完成 | 2026-06-20 | 2026-06-20 | fe_model.py (FWL), 3 tests, UI model selector, pyfixest | — | — | fe_model.py（pyfixest + FWL 退化） |
 | 6 | 多模型联动 | 待开始 | — | — | multi_model.py, 冲突矩阵, 安全交集 |
 | 7 | 2SLS/IV 支持 | 待开始 | — | — | iv_model.py（CFA 分解） |
 | 8 | 导出 + 部署 | 待开始 | — | — | export.py, README, 可选 Docker |
@@ -93,7 +94,9 @@
 
 | 日期 | 变更人 | Phase | 变更内容 |
 |------|--------|-------|---------|
+| 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 | 2026-06-18 | Qoder | 0 | 项目初始化: 创建任务追踪器、目录骨架、依赖清单 |
+| 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 | 2026-06-18 | Qoder | 0 | Phase 0 完成: 12 个文件、pytest 验证通过、Git 仓库初始化、references/ 加入 .gitignore |
