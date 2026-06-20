@@ -15,6 +15,7 @@
 ## V2.0 版本信息
 
 - **版本**: V2.0-dev
+| 2026-06-20 | Codex | 10 | Phase 10: 模型配置页 (ModelCard + SetupPage, 多模型表单, XY冲突/Control排除, 配置JSON持久化, Stata导入占位)
 | 2026-06-20 | Codex | 9 | Phase 9: PySide6 骨架 + 数据导入页 (main.py, ViewModel, MainWindow, DataPage, VariableSelector, 4 ViewModel tests, 54 total)
 | 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
@@ -37,6 +38,7 @@
 | 7 | 2SLS/IV 支持 | 已完成 | 2026-06-20 | 2026-06-20 | iv_model.py (4 tests), CFA strategy, pipeline+UI | — | — | iv_model.py（CFA 分解） |
 | 8 | 导出 + 部署 | 已完成 | 2026-06-20 | 2026-06-20 | export.py (4 formats), README.md, UI wired | — | — | export.py, README, 可选 Docker |
 | 9 | PySide6 骨架 + 数据导入页 | 已完成 | 2026-06-20 | 2026-06-20 | main.py, ui/viewmodel.py, ui/main_window.py, ui/widgets/page_data.py, ui/widgets/variable_selector.py, 4 new tests |
+| 10 | 模型配置页 | 已完成 | 2026-06-20 | 2026-06-20 | ui/widgets/page_setup.py (ModelCard + SetupPage + StataImportDialog), ViewModel config_changed + save/load_config, MainWindow switch_to_tab |
 
 ---
 
@@ -107,6 +109,7 @@
 
 | 日期 | 变更人 | Phase | 变更内容 |
 |------|--------|-------|---------|
+| 2026-06-20 | Codex | 10 | Phase 10: 模型配置页 (ModelCard + SetupPage, 多模型表单, XY冲突/Control排除, 配置JSON持久化, Stata导入占位)
 | 2026-06-20 | Codex | 9 | Phase 9: PySide6 骨架 + 数据导入页 (main.py, ViewModel, MainWindow, DataPage, VariableSelector, 4 ViewModel tests, 54 total)
 | 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |

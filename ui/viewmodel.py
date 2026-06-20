@@ -6,6 +6,7 @@ for reactive updates. Widgets never hold data directly; they subscribe
 to ViewModel signals and access its properties.
 """
 
+import json
 import os
 import pandas as pd
 from PySide6.QtCore import QObject, Signal
@@ -24,6 +25,7 @@ class SigAdjustViewModel(QObject):
     data_loaded = Signal(pd.DataFrame)
     progress_updated = Signal(int, int, str)   # current, total, message
     calculation_finished = Signal(dict)
+    config_changed = Signal(dict)
     calculation_error = Signal(str)
 
     def __init__(self, parent=None):
@@ -58,6 +60,8 @@ class SigAdjustViewModel(QObject):
     @config.setter
     def config(self, value: dict | None):
         self._config = value
+        if value is not None:
+            self.config_changed.emit(value)
 
     @property
     def results(self) -> dict | None:
@@ -128,13 +132,20 @@ class SigAdjustViewModel(QObject):
         pass
 
     def save_config(self, path: str) -> None:
-        """Save current config to a JSON file (placeholder)."""
-        pass
+        """Save current config to a JSON file."""
+        if self._config is None:
+            raise ValueError("No config to save")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self._config, f, ensure_ascii=False, indent=2)
 
     def load_config(self, path: str) -> bool:
-        """Load config from a JSON file (placeholder).
+        """Load config from a JSON file."""
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+            self._config = config
+            self.config_changed.emit(config)
+            return True
+        except Exception:
+            return False
 
-        Returns:
-            True if loading succeeded.
-        """
-        return False

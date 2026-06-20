@@ -2,7 +2,7 @@
 
 Contains a QTabWidget with 4 tabs:
   1. Data Import (DataPage)
-  2. Model Setup (placeholder for Phase 10)
+  2. Model Setup (SetupPage)
   3. Computation Progress (placeholder for Phase 12)
   4. Results Display (placeholder for Phase 12)
 """
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QStatusBar,
 )
 from ui.widgets.page_data import DataPage
+from ui.widgets.page_setup import SetupPage
 
 
 class MainWindow(QMainWindow):
@@ -66,9 +67,9 @@ class MainWindow(QMainWindow):
         self._data_page = DataPage(self._vm)
         self._tab_widget.addTab(self._data_page, "Data Import")
 
-        # Tab 2: Model setup (placeholder)
-        placeholder_setup = self._make_placeholder("Model configuration will be implemented in Phase 10")
-        self._tab_widget.addTab(placeholder_setup, "Model Setup")
+        # Tab 2: Model setup
+        self._setup_page = SetupPage(self._vm, self)
+        self._tab_widget.addTab(self._setup_page, "Model Setup")
 
         # Tab 3: Computation progress (placeholder)
         placeholder_progress = self._make_placeholder("Computation progress will be implemented in Phase 12")
@@ -91,6 +92,11 @@ class MainWindow(QMainWindow):
             }
         """)
         status_bar.showMessage("v2.0.0-dev")
+
+    def switch_to_tab(self, index: int):
+        """Switch to the tab at the given index (0-based)."""
+        if 0 <= index < self._tab_widget.count():
+            self._tab_widget.setCurrentIndex(index)
 
     @staticmethod
     def _make_placeholder(text: str) -> QWidget:
