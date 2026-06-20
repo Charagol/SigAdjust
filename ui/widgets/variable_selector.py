@@ -370,19 +370,26 @@ class VariableSelector(QWidget):
     # ── Event Handling ───────────────────────────────────────────────
 
     def eventFilter(self, obj, event):
+        """Handle search box events: click to toggle, Escape to close."""
         if obj is self._search_box:
-            if event.type() == event.Type.FocusIn:
-                if self._all_items:
+            if event.type() == event.Type.MouseButtonPress:
+                # Toggle popup without interfering with text cursor
+                if self._popup.isVisible():
+                    self._hide_popup()
+                elif self._all_items:
                     self._filtered_items = [
                         item for item in self._all_items
                         if item not in set(self._selected)
                     ]
                     self._rebuild_candidates()
                     self._show_popup()
-            elif event.type() == event.Type.FocusOut:
-                self._hide_popup()
+                return False  # let search box handle normal click behavior
+            elif event.type() == event.Type.KeyPress:
+                if event.key() == Qt.Key_Escape:
+                    self._hide_popup()
+                    return True
+            # FocusIn / FocusOut deliberately ignored to avoid recursion
         return super().eventFilter(obj, event)
-
     def mousePressEvent(self, event):
         """Hide popup when clicking outside."""
         if self._popup.isVisible():

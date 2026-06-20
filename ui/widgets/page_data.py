@@ -220,8 +220,16 @@ class DataPage(QWidget):
 
     def _update_stats(self, filepath: str, df: pd.DataFrame):
         """Update the stats summary cards."""
-        self._stats_cards["rows"].setText(f"{len(df):,}")
-        self._stats_cards["columns"].setText(f"{len(df.columns):,}")
+        try:
+            self._stats_cards["rows"].setText(f"{len(df):,}")
+            self._stats_cards["columns"].setText(f"{len(df.columns):,}")
+            ext = os.path.splitext(filepath)[1].upper().lstrip(".")
+            self._stats_cards["file"].setText(ext)
+        except Exception:
+            pass  # graceful degradation: stats cards non-critical
 
-        ext = os.path.splitext(filepath)[1].upper().lstrip(".")
-        self._stats_cards["file"].setText(ext)
+    def _clear_tables(self):
+        """Clear preview and column info tables."""
+        self._preview_table.setRowCount(0)
+        self._preview_table.setColumnCount(0)
+        self._info_table.setRowCount(0)
