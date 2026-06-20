@@ -185,6 +185,7 @@ class VariableSelector(QWidget):
         self._all_items: list[str] = []
         self._selected: list[str] = []
         self._filtered_items: list[str] = []
+        self._max_selection: int = 0  # 0 = unlimited
         self._setup_ui()
 
     # ── Public API ───────────────────────────────────────────────────
@@ -194,6 +195,10 @@ class VariableSelector(QWidget):
         self._all_items = list(items)
         self._filtered_items = list(items)
         self._rebuild_candidates()
+
+    def set_max_selection(self, n: int):
+        """Set maximum number of items that can be selected (0 = unlimited)."""
+        self._max_selection = n
 
     def set_selected(self, selected: list[str]):
         """Set which items are currently selected."""
@@ -331,8 +336,10 @@ class VariableSelector(QWidget):
             self._candidate_layout.addWidget(btn)
 
     def _select_item(self, name: str):
-        """Add an item to the selected list."""
+        """Add an item to the selected list. Respects max_selection limit."""
         if name not in self._selected:
+            if self._max_selection > 0 and len(self._selected) >= self._max_selection:
+                self._selected.pop(0)  # FIFO replacement
             self._selected.append(name)
             self._rebuild_tags()
             self._rebuild_candidates()

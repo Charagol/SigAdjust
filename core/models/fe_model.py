@@ -70,7 +70,14 @@ def fit_fe(
         Dict with "baseline" and "diagnostics" (matching ols_model format).
     """
     all_vars = [key_var] + [v for v in control_vars if v != key_var]
-    y_dm, X_dm, _ = _demean(df, dependent_var, all_vars, fe_vars)
+    # dropna like Stata reg
+    _model_data = df[all_vars + [dependent_var] + fe_vars].dropna()
+    n_missing_dropped = len(df) - len(_model_data)
+    # Non-numeric column check on demeaned data
+    _non_numeric = [col for col in all_vars if not pd.api.types.is_numeric_dtype(_model_data[col])]
+    if _non_numeric:
+        raise ValueError(f"非数值类型变量不能参与回归: {chr(44).join(_non_numeric)}。请检查这些列是否包含文本数据。")
+    y_dm, X_dm, _ = _demean(_model_data, dependent_var, all_vars, fe_vars)
 
     # Fit OLS on demeaned data
     X_with_const = sm.add_constant(X_dm)
@@ -90,6 +97,7 @@ def fit_fe(
         "r_squared": float(model.rsquared),
         "n_obs": int(model.nobs),
         "df": int(model.df_resid),
+        "n_missing_dropped": n_missing_dropped,
     }
 
     diagnostics = {

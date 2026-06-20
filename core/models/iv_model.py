@@ -66,6 +66,16 @@ def fit_iv(
         Dict with "baseline" and "diagnostics" keys.
         baseline includes stage1_f for instrument strength.
     """
+    # Drop rows with any missing values (like Stata reg)
+    _all_iv_vars = list(dict.fromkeys([dependent_var, endogenous_var] + instruments + control_vars))
+    _model_data = df[_all_iv_vars].dropna()
+    n_missing_dropped = len(df) - len(_model_data)
+    df = df.loc[_model_data.index].copy()
+    # Non-numeric column check
+    _non_numeric = [col for col in _all_iv_vars if col != dependent_var and not pd.api.types.is_numeric_dtype(df[col])]
+    if _non_numeric:
+        raise ValueError(f"非数值类型变量不能参与回归: {chr(44).join(_non_numeric)}。请检查这些列是否包含文本数据。")
+
     # Stage 1
     model1, v_hat, f_stat = _run_stage1(df, endogenous_var, instruments, control_vars)
 
@@ -86,6 +96,7 @@ def fit_iv(
         "n_obs": int(model2.nobs),
         "df": int(model2.df_resid),
         "stage1_f": float(f_stat) if f_stat is not None else 0.0,
+        "n_missing_dropped": n_missing_dropped,
     }
 
     diagnostics = {

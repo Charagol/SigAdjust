@@ -28,10 +28,19 @@ def fit_ols(
     """
     # ── Build design matrix
     all_vars = [key_var] + [v for v in control_vars if v != key_var]
-    X = df[all_vars].copy()
+    # dropna like Stata reg
+    _model_data = df[all_vars + [dependent_var]].dropna()
+    n_missing_dropped = len(df) - len(_model_data)
+    X = _model_data[all_vars].copy()
+    y = _model_data[dependent_var].values
+    # Non-numeric column check
+    _non_numeric = [col for col in X.columns if not pd.api.types.is_numeric_dtype(X[col])]
+    if _non_numeric:
+        raise ValueError(
+            f"非数值类型变量不能参与回归: {chr(44).join(_non_numeric)}"
+            f"。请检查这些列是否包含文本数据。"
+        )
     X = sm.add_constant(X)
-    y = df[dependent_var].values
-
     model = sm.OLS(y, X).fit()
     infl = model.get_influence()
 
@@ -50,6 +59,7 @@ def fit_ols(
         "r_squared": float(model.rsquared),
         "n_obs": int(model.nobs),
         "df": int(model.df_resid),
+        "n_missing_dropped": n_missing_dropped,
     }
 
     diagnostics = {

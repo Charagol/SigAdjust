@@ -274,12 +274,14 @@ class ModelCard(QGroupBox):
         # Y (dependent variable)
         self.y_selector = VariableSelector()
         self.y_selector.set_items(self._all_vars)
+        self.y_selector.set_max_selection(1)
         layout.addWidget(QLabel("被解释变量 (Y):"))
         layout.addWidget(self.y_selector)
 
         # X (key explanatory variable)
         self.x_selector = VariableSelector()
         self.x_selector.set_items(self._all_vars)
+        self.x_selector.set_max_selection(2)
         layout.addWidget(QLabel("核心解释变量 (X):"))
         layout.addWidget(self.x_selector)
 

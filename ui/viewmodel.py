@@ -108,7 +108,10 @@ class SigAdjustViewModel(QObject):
             if ext == ".csv":
                 df = pd.read_csv(filepath)
             elif ext == ".dta":
-                df = pd.read_stata(filepath)
+                df = pd.read_stata(filepath, convert_categoricals=False)
+            # Decode Stata str## bytes to strings
+                for col in df.select_dtypes(include=[bytes]).columns:
+                    df[col] = df[col].apply(lambda x: x.decode("utf-8", errors="replace") if isinstance(x, bytes) else x)
             elif ext in (".xlsx", ".xls"):
                 df = pd.read_excel(filepath)
             else:
@@ -131,6 +134,8 @@ class SigAdjustViewModel(QObject):
             return True
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()  # ← 这行会把完整堆栈打到终端
             # On failure: clear stale state and notify UI
             self._df = None
             self._columns_info = {}
