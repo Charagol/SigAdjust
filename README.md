@@ -1,4 +1,4 @@
-# SigAdjust — Statistical Significance Adjustment Tool
+﻿# SigAdjust — Statistical Significance Adjustment Tool
 
 One-click regression diagnostics and sample optimization for econometric research.
 
@@ -6,7 +6,7 @@ One-click regression diagnostics and sample optimization for econometric researc
 
 ```bash
 pip install -r requirements.txt
-streamlit run app.py
+python main.py
 ```
 
 ## Usage

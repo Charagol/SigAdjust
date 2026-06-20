@@ -1,4 +1,4 @@
-# 显著性调整工具 — 任务追踪器
+﻿# 显著性调整工具 — 任务追踪器
 
 ## 文档维护准则
 
@@ -12,9 +12,10 @@
 
 ---
 
-## V1.0 版本信息
+## V2.0 版本信息
 
-- **版本**: V1.0-alpha
+- **版本**: V2.0-dev
+| 2026-06-20 | Codex | 9 | Phase 9: PySide6 骨架 + 数据导入页 (main.py, ViewModel, MainWindow, DataPage, VariableSelector, 4 ViewModel tests, 54 total)
 | 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 - **创建日期**: 2026-06-18
@@ -35,6 +36,7 @@
 | 6 | 多模型联动 | 已完成 | 2026-06-20 | 2026-06-20 | multi_model.py (11 tests), pipeline+UI, 44 total | — | — | multi_model.py, 冲突矩阵, 安全交集 |
 | 7 | 2SLS/IV 支持 | 已完成 | 2026-06-20 | 2026-06-20 | iv_model.py (4 tests), CFA strategy, pipeline+UI | — | — | iv_model.py（CFA 分解） |
 | 8 | 导出 + 部署 | 已完成 | 2026-06-20 | 2026-06-20 | export.py (4 formats), README.md, UI wired | — | — | export.py, README, 可选 Docker |
+| 9 | PySide6 骨架 + 数据导入页 | 已完成 | 2026-06-20 | 2026-06-20 | main.py, ui/viewmodel.py, ui/main_window.py, ui/widgets/page_data.py, ui/widgets/variable_selector.py, 4 new tests |
 
 ---
 
@@ -105,9 +107,9 @@
 
 | 日期 | 变更人 | Phase | 变更内容 |
 |------|--------|-------|---------|
+| 2026-06-20 | Codex | 9 | Phase 9: PySide6 骨架 + 数据导入页 (main.py, ViewModel, MainWindow, DataPage, VariableSelector, 4 ViewModel tests, 54 total)
 | 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 | 2026-06-18 | Qoder | 0 | 项目初始化: 创建任务追踪器、目录骨架、依赖清单 |
-| 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 | 2026-06-18 | Qoder | 0 | Phase 0 完成: 12 个文件、pytest 验证通过、Git 仓库初始化、references/ 加入 .gitignore |

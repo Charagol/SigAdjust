@@ -3,7 +3,7 @@ __pycache__/
 .pytest_cache/
 
 # Qoder 工作草稿（保留 .gitkeep）
-.codex/specs/*.md
+.codex/*
 !.codex/specs/.gitkeep
 
 # 用户上传数据
