@@ -67,19 +67,19 @@ class MainWindow(QMainWindow):
 
         # Tab 1: Data import
         self._data_page = DataPage(self._vm)
-        self._tab_widget.addTab(self._data_page, "Data Import")
+        self._tab_widget.addTab(self._data_page, "数据导入")
 
         # Tab 2: Model setup
         self._setup_page = SetupPage(self._vm, self)
-        self._tab_widget.addTab(self._setup_page, "Model Setup")
+        self._tab_widget.addTab(self._setup_page, "模型设定")
 
         # Tab 3: Computation progress
         self._progress_page = ComputationProgressPage(self._vm, self)
-        self._tab_widget.addTab(self._progress_page, "Computation")
+        self._tab_widget.addTab(self._progress_page, "计算进度")
 
         # Tab 4: Results display
         self._results_page = ResultsPage(self._vm)
-        self._tab_widget.addTab(self._results_page, "Results")
+        self._tab_widget.addTab(self._results_page, "结果展示")
 
         self.setCentralWidget(self._tab_widget)
 

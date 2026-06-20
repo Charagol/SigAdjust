@@ -1,4 +1,4 @@
-﻿"""DataPage — Data import tab for SigAdjust V2.
+"""DataPage — Data import tab for SigAdjust V2.
 
 Allows the user to open CSV/DTA/Excel files, preview the data,
 and inspect column-level metadata (dtype, missing values).
@@ -35,11 +35,11 @@ class DataPage(QWidget):
         layout.setSpacing(12)
 
         # ── File selection area ──
-        file_group = QGroupBox("File Selection")
+        file_group = QGroupBox("文件选择")
         file_layout = QVBoxLayout(file_group)
 
         btn_layout = QHBoxLayout()
-        self._open_btn = QPushButton("Open File")
+        self._open_btn = QPushButton("打开文件")
         self._open_btn.setFixedHeight(32)
         self._open_btn.setStyleSheet("""
             QPushButton {
@@ -56,7 +56,7 @@ class DataPage(QWidget):
         """)
         btn_layout.addWidget(self._open_btn)
 
-        self._format_label = QLabel("Supported: .csv / .dta / .xlsx")
+        self._format_label = QLabel("支持格式: .csv / .dta / .xlsx")
         self._format_label.setStyleSheet("color: #6b7280; font-size: 12px;")
         btn_layout.addWidget(self._format_label)
         btn_layout.addStretch()
@@ -71,7 +71,7 @@ class DataPage(QWidget):
         # Stats cards
         stats_layout = QHBoxLayout()
         self._stats_cards = {}
-        for label_text in ("Rows", "Columns", "File"):
+        for label_text in ("行数", "列数", "文件格式"):
             card = QFrame()
             card.setFixedHeight(60)
             card.setMinimumWidth(120)
@@ -100,7 +100,7 @@ class DataPage(QWidget):
         layout.addWidget(file_group)
 
         # ── Data preview table ──
-        preview_group = QGroupBox("Data Preview (first 100 rows)")
+        preview_group = QGroupBox("数据预览 (前 100 行)")
         preview_layout = QVBoxLayout(preview_group)
 
         self._preview_table = QTableWidget()
@@ -126,12 +126,12 @@ class DataPage(QWidget):
         layout.addWidget(preview_group, stretch=2)
 
         # ── Column info panel ──
-        info_group = QGroupBox("Column Information")
+        info_group = QGroupBox("列信息")
         info_layout = QVBoxLayout(info_group)
 
         self._info_table = QTableWidget()
         self._info_table.setColumnCount(4)
-        self._info_table.setHorizontalHeaderLabels(["Column", "Type", "Missing", "Missing Rate"])
+        self._info_table.setHorizontalHeaderLabels(["列名", "类型", "缺失值", "缺失率"])
         self._info_table.setAlternatingRowColors(True)
         self._info_table.setStyleSheet("""
             QTableWidget {
@@ -162,7 +162,7 @@ class DataPage(QWidget):
         """Open file dialog and load selected file."""
         filepath, _ = QFileDialog.getOpenFileName(
             self,
-            "Open Data File",
+            "打开数据文件",
             "",
             "Data Files (*.csv *.dta *.xlsx *.xls);;CSV Files (*.csv);;"
             "Stata Files (*.dta);;Excel Files (*.xlsx *.xls);;All Files (*)",

@@ -16,7 +16,7 @@ import pandas as pd
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel,
-    QPushButton, QLineEdit, QComboBox, QDoubleSpinBox,
+    QPushButton, QLineEdit, QComboBox, QDoubleSpinBox, QCheckBox,
     QSlider, QScrollArea, QFileDialog, QMessageBox,
     QDialog, QTextEdit, QFrame, QSizePolicy, QFormLayout,
 )
@@ -36,7 +36,7 @@ class StataImportDialog(QDialog):
         self._vm = viewmodel
         self._setup_page = setup_page
         self._parsed = None
-        self.setWindowTitle("Stata Command Import")
+        self.setWindowTitle("Stata 命令导入")
         self.resize(620, 520)
         self._setup_ui()
         self._connect_signals()
@@ -44,27 +44,27 @@ class StataImportDialog(QDialog):
     def _setup_ui(self):
         layout = QVBoxLayout(self)
         info = QLabel(
-            "Paste a Stata regression command. Supported:\n"
+            "\u7c98\u8d34 Stata \u56de\u5f52\u547d\u4ee4\u3002\u652f\u6301:\n"
             "  reg/regress, logit, probit, ologit, oprobit, reghdfe\n"
-            "  Supports: i.var factor variables, absorb(), robust\n"
-            "  Not supported: ##, $macro, if/in/weight, cluster"
+            "  \u652f\u6301: i.var \u56e0\u5b50\u53d8\u91cf, absorb(), robust\n"
+            "  \u4e0d\u652f\u6301: ##, $macro, if/in/weight, cluster"
         )
         info.setStyleSheet("color: #6b7280; font-size: 12px; padding: 4px;")
         info.setWordWrap(True)
         layout.addWidget(info)
         self._input = QTextEdit()
-        self._input.setPlaceholderText("Example: reg Y X c1 c2 i.industry, robust")
+        self._input.setPlaceholderText("示例: reg Y X c1 c2 i.industry, robust")
         self._input.setMaximumHeight(80)
         layout.addWidget(self._input)
         btn_row = QHBoxLayout()
-        self._parse_btn = QPushButton("Parse")
+        self._parse_btn = QPushButton("解析")
         self._parse_btn.setStyleSheet(
             "QPushButton { background: #4f46e5; color: white; border: none;"
             " border-radius: 4px; padding: 6px 16px; }"
             " QPushButton:hover { background: #4338ca; }"
         )
         btn_row.addWidget(self._parse_btn)
-        self._cancel_btn = QPushButton("Cancel")
+        self._cancel_btn = QPushButton("取消")
         self._cancel_btn.clicked.connect(self.reject)
         btn_row.addWidget(self._cancel_btn)
         btn_row.addStretch()
@@ -73,14 +73,14 @@ class StataImportDialog(QDialog):
         self._msg_label.setWordWrap(True)
         self._msg_label.setVisible(False)
         layout.addWidget(self._msg_label)
-        self._preview = QGroupBox("Parsed Result")
+        self._preview = QGroupBox("解析结果")
         self._preview.setVisible(False)
         preview_layout = QVBoxLayout(self._preview)
         self._preview_text = QLabel("")
         self._preview_text.setWordWrap(True)
         self._preview_text.setStyleSheet("font-size: 13px; padding: 4px;")
         preview_layout.addWidget(self._preview_text)
-        self._confirm_btn = QPushButton("Confirm Import")
+        self._confirm_btn = QPushButton("确认导入")
         self._confirm_btn.setStyleSheet(
             "QPushButton { background: #059669; color: white; border: none;"
             " border-radius: 4px; padding: 8px 20px; font-size: 13px; }"
@@ -96,7 +96,7 @@ class StataImportDialog(QDialog):
     def _on_parse(self):
         text = self._input.toPlainText().strip()
         if not text:
-            self._show_error("Please enter a command.")
+            self._show_error("请输入命令。")
             return
         result = StataCommandParser.parse(text)
         self._parsed = result
@@ -109,7 +109,7 @@ class StataImportDialog(QDialog):
         if result["factor_vars"] and df is not None:
             for fv in result["factor_vars"]:
                 if fv not in df.columns:
-                    self._show_error("Factor variable [" + fv + "] not found in dataset.")
+                    self._show_error("因子变量 [" + fv + "] 在数据中未找到。")
                     return
                 try:
                     dummies = pd.get_dummies(df[fv], prefix="_C", drop_first=True)
@@ -119,22 +119,22 @@ class StataImportDialog(QDialog):
                         expanded_cols.append(col)
                     all_controls.extend(expanded_cols)
                 except Exception as e:
-                    self._show_error("Failed to expand factor [" + fv + "]: " + str(e))
+                    self._show_error("因子变量展开失败 [" + fv + "]: " + str(e))
                     return
         result["control_vars"] = all_controls
         result["_expanded_cols"] = expanded_cols
         col_set = set(df.columns) if df is not None else set()
         val_errors = []
         if result["dependent_var"] and result["dependent_var"] not in col_set:
-            val_errors.append("Y variable [" + result["dependent_var"] + "] not in dataset")
+            val_errors.append("Y 变量 [" + result["dependent_var"] + "] 不在数据集中")
         if result["key_var"] and result["key_var"] not in col_set:
-            val_errors.append("X variable [" + result["key_var"] + "] not in dataset")
+            val_errors.append("X 变量 [" + result["key_var"] + "] 不在数据集中")
         for ctrl in result["control_vars"]:
             if ctrl not in col_set:
-                val_errors.append("Control variable [" + ctrl + "] not in dataset")
+                val_errors.append("控制变量 [" + ctrl + "] 不在数据集中")
         for fv in result["factor_vars"]:
             if fv not in col_set:
-                val_errors.append("Factor variable [" + fv + "] not in dataset")
+                val_errors.append("因子变量 [" + fv + "] not in dataset")
         if val_errors:
             self._show_error("\n".join(val_errors))
             return
@@ -149,18 +149,18 @@ class StataImportDialog(QDialog):
     def _show_preview(self, result):
         self._msg_label.setVisible(False)
         lines = [
-            "  Model Type: " + result["model_type"].upper(),
-            "  Dependent Var (Y): " + result["dependent_var"],
-            "  Key Var (X): " + result["key_var"],
+            "  模型类型: " + result["model_type"].upper(),
+            "  被解释变量 (Y): " + result["dependent_var"],
+            "  核心解释变量 (X): " + result["key_var"],
         ]
         if result["control_vars"]:
-            lines.append("  Controls: " + ", ".join(result["control_vars"]))
+            lines.append("  控制变量: " + ", ".join(result["control_vars"]))
         if result["factor_vars"]:
-            lines.append("  Factor Vars (expanded): " + ", ".join(result["factor_vars"]))
+            lines.append("  因子变量 (已展开): " + ", ".join(result["factor_vars"]))
         if result["fe_vars"]:
-            lines.append("  Fixed Effects: " + ", ".join(result["fe_vars"]))
+            lines.append("  固定效应: " + ", ".join(result["fe_vars"]))
         if result["se_type"] == "robust":
-            lines.append("  Std Errors: robust")
+            lines.append("  标准误: 稳健")
         if result.get("warning"):
             lines.append("\n  Warning: " + result["warning"])
         self._preview_text.setText("\n".join(lines))
@@ -199,7 +199,7 @@ class StataImportDialog(QDialog):
 # ═════════════════════════════════════════════════════════════════════
 
 MODEL_TYPES = ["ols", "logit", "probit", "fe", "iv"]
-DIRECTION_OPTIONS = ["both", "positive", "negative"]
+DIRECTION_OPTIONS = ["正向显著", "负向显著"] # "positive", "negative" UI labels
 
 
 class ModelCard(QGroupBox):
@@ -239,11 +239,12 @@ class ModelCard(QGroupBox):
         self._name_input = QLineEdit()
         self._name_input.setPlaceholderText(f"Model {self._index + 1}")
         self._name_input.setStyleSheet("font-weight: bold; font-size: 13px;")
-        title_layout.addWidget(QLabel("Name:"))
+        title_layout.addWidget(QLabel("名称:"))
         title_layout.addWidget(self._name_input)
 
-        title_layout.addWidget(QLabel("Type:"))
+        title_layout.addWidget(QLabel("类型:"))
         self._type_combo = QComboBox()
+        self._type_combo.setMinimumWidth(100)
         self._type_combo.addItems([t.upper() for t in MODEL_TYPES])
         self._type_combo.setCurrentIndex(0)
         self._type_combo.currentTextChanged.connect(self._on_type_changed)
@@ -273,19 +274,19 @@ class ModelCard(QGroupBox):
         # Y (dependent variable)
         self.y_selector = VariableSelector()
         self.y_selector.set_items(self._all_vars)
-        layout.addWidget(QLabel("Dependent Variable (Y):"))
+        layout.addWidget(QLabel("被解释变量 (Y):"))
         layout.addWidget(self.y_selector)
 
         # X (key explanatory variable)
         self.x_selector = VariableSelector()
         self.x_selector.set_items(self._all_vars)
-        layout.addWidget(QLabel("Key Variable (X):"))
+        layout.addWidget(QLabel("核心解释变量 (X):"))
         layout.addWidget(self.x_selector)
 
         # Control variables
         self.control_selector = VariableSelector()
         self.control_selector.set_items(self._all_vars)
-        layout.addWidget(QLabel("Control Variables:"))
+        layout.addWidget(QLabel("控制变量:"))
         layout.addWidget(self.control_selector)
 
         # ── Conditional fields ──
@@ -295,7 +296,7 @@ class ModelCard(QGroupBox):
         fe_layout.setContentsMargins(0, 0, 0, 0)
         self.fe_selector = VariableSelector()
         self.fe_selector.set_items(self._all_vars)
-        fe_layout.addWidget(QLabel("Fixed Effects Variables:"))
+        fe_layout.addWidget(QLabel("固定效应变量:"))
         fe_layout.addWidget(self.fe_selector)
         self._fe_group.setVisible(False)
         layout.addWidget(self._fe_group)
@@ -306,11 +307,11 @@ class ModelCard(QGroupBox):
         iv_layout.setContentsMargins(0, 0, 0, 0)
         self.endog_selector = VariableSelector()
         self.endog_selector.set_items(self._all_vars)
-        iv_layout.addWidget(QLabel("Endogenous Variable:"))
+        iv_layout.addWidget(QLabel("内生变量:"))
         iv_layout.addWidget(self.endog_selector)
         self.instr_selector = VariableSelector()
         self.instr_selector.set_items(self._all_vars)
-        iv_layout.addWidget(QLabel("Instrumental Variables:"))
+        iv_layout.addWidget(QLabel("工具变量:"))
         iv_layout.addWidget(self.instr_selector)
         self._iv_group.setVisible(False)
         layout.addWidget(self._iv_group)
@@ -318,7 +319,7 @@ class ModelCard(QGroupBox):
         # ── Priority + target p ──
         params_layout = QHBoxLayout()
 
-        params_layout.addWidget(QLabel("Priority:"))
+        params_layout.addWidget(QLabel("优先级:"))
         self._priority_slider = QSlider(Qt.Horizontal)
         self._priority_slider.setRange(1, 5)
         self._priority_slider.setValue(5)
@@ -334,7 +335,7 @@ class ModelCard(QGroupBox):
         params_layout.addWidget(self._priority_label)
 
         params_layout.addSpacing(20)
-        params_layout.addWidget(QLabel("Target p:"))
+        params_layout.addWidget(QLabel("目标 p:"))
         self._target_p_spin = QDoubleSpinBox()
         self._target_p_spin.setRange(0.001, 0.50)
         self._target_p_spin.setSingleStep(0.005)
@@ -494,11 +495,11 @@ class SetupPage(QWidget):
         main_layout.setSpacing(8)
 
         # ── Global settings ──
-        global_group = QGroupBox("Global Settings")
+        global_group = QGroupBox("全局设置")
         global_layout = QHBoxLayout(global_group)
         global_layout.setSpacing(16)
 
-        global_layout.addWidget(QLabel("Significance Threshold:"))
+        global_layout.addWidget(QLabel("显著性阈值:"))
         self._threshold_spin = QDoubleSpinBox()
         self._threshold_spin.setRange(0.001, 0.50)
         self._threshold_spin.setSingleStep(0.005)
@@ -507,7 +508,7 @@ class SetupPage(QWidget):
         self._threshold_spin.setFixedWidth(80)
         global_layout.addWidget(self._threshold_spin)
 
-        global_layout.addWidget(QLabel("Max Deletion %:"))
+        global_layout.addWidget(QLabel("最大删除比:"))
         self._max_pct_spin = QDoubleSpinBox()
         self._max_pct_spin.setRange(0.1, 50.0)
         self._max_pct_spin.setSingleStep(0.5)
@@ -517,7 +518,7 @@ class SetupPage(QWidget):
         self._max_pct_spin.setFixedWidth(80)
         global_layout.addWidget(self._max_pct_spin)
 
-        global_layout.addWidget(QLabel("Direction:"))
+        global_layout.addWidget(QLabel("方向:"))
         self._direction_combo = QComboBox()
         self._direction_combo.addItems(["both", "positive", "negative"])
         self._direction_combo.setCurrentIndex(0)
@@ -526,7 +527,7 @@ class SetupPage(QWidget):
         global_layout.addStretch()
 
         # Stata import button (placeholder)
-        self._stata_btn = QPushButton("Stata Import")
+        self._stata_btn = QPushButton("Stata 导入")
         self._stata_btn.setStyleSheet("""
             QPushButton {
                 border: 1px solid #d1d5db;
@@ -555,7 +556,7 @@ class SetupPage(QWidget):
         main_layout.addWidget(scroll, stretch=1)
 
         # ── Add model button ──
-        self._add_btn = QPushButton("+ Add Model")
+        self._add_btn = QPushButton("+ 添加模型")
         self._add_btn.setStyleSheet("""
             QPushButton {
                 background-color: #f3f4f6;
@@ -574,9 +575,9 @@ class SetupPage(QWidget):
 
         # ── Bottom action bar ──
         bottom_bar = QHBoxLayout()
-        self._save_btn = QPushButton("Save Config")
-        self._load_btn = QPushButton("Load Config")
-        self._start_btn = QPushButton("Start Analysis")
+        self._save_btn = QPushButton("保存配置")
+        self._load_btn = QPushButton("加载配置")
+        self._start_btn = QPushButton("开始分析")
         self._start_btn.setStyleSheet("""
             QPushButton {
                 background-color: #4f46e5;
@@ -604,6 +605,7 @@ class SetupPage(QWidget):
         self._save_btn.clicked.connect(self._on_save_config)
         self._load_btn.clicked.connect(self._on_load_config)
         self._start_btn.clicked.connect(self._on_start_analysis)
+        self._vm.data_loaded.connect(self._on_data_loaded)
 
     # ── Model Card Management ────────────────────────────────────────
 
@@ -750,6 +752,13 @@ class SetupPage(QWidget):
 
     # ── Action Handlers ──────────────────────────────────────────────
 
+    def _on_data_loaded(self, df):
+        """Refresh all variable selectors when new data is loaded."""
+        all_vars = self._get_all_vars()
+        for card in self._model_cards:
+            card.update_all_items(all_vars)
+        self._update_all_control_items()
+
     def _on_stata_import(self):
         """Open the Stata import placeholder dialog."""
         dialog = StataImportDialog(self._vm, self)
@@ -759,7 +768,7 @@ class SetupPage(QWidget):
         """Save current configuration to a JSON file."""
         config = self._build_config()
         filepath, _ = QFileDialog.getSaveFileName(
-            self, "Save Configuration", "sigadjust_config.json",
+            self, "保存配置", "sigadjust_config.json",
             "JSON Files (*.json)",
         )
         if not filepath:
@@ -774,7 +783,7 @@ class SetupPage(QWidget):
     def _on_load_config(self):
         """Load and apply configuration from a JSON file."""
         filepath, _ = QFileDialog.getOpenFileName(
-            self, "Load Configuration", "",
+            self, "加载配置", "",
             "JSON Files (*.json);;All Files (*)",
         )
         if not filepath:
@@ -783,15 +792,15 @@ class SetupPage(QWidget):
             with open(filepath, "r", encoding="utf-8") as f:
                 config = json.load(f)
         except Exception:
-            QMessageBox.warning(self, "Error", "Failed to load configuration file.")
+            QMessageBox.warning(self, "Error", "配置文件加载失败。")
             return
 
         # Validate version
         version = config.get("version", "")
         if version not in ("1.0", "2.0"):
             QMessageBox.warning(
-                self, "Incompatible",
-                f"Unsupported config version: {version}. Expected 1.0 or 2.0.",
+                self, "不兼容",
+                "不支持的配置版本: " + version + "，需要 1.0 或 2.0。",
             )
             return
 
@@ -800,8 +809,14 @@ class SetupPage(QWidget):
         self._threshold_spin.setValue(gs.get("significance_threshold", 0.05))
         self._max_pct_spin.setValue(gs.get("max_deletions_pct", 5.0))
         direction = gs.get("direction", "both")
-        dir_idx = DIRECTION_OPTIONS.index(direction) if direction in DIRECTION_OPTIONS else 0
-        self._direction_combo.setCurrentIndex(dir_idx)
+        if direction == "both":
+            self._direction_checkbox.setChecked(False)
+        else:
+            self._direction_checkbox.setChecked(True)
+            if direction == "positive":
+                self._direction_combo.setCurrentText(DIRECTION_OPTIONS[0])
+            else:
+                self._direction_combo.setCurrentText(DIRECTION_OPTIONS[1])
 
         # Rebuild model cards
         models_config = config.get("models", [])
@@ -861,7 +876,7 @@ class SetupPage(QWidget):
             msg = "\n\n".join(errors)
             self._last_error = msg
             if not self._test_mode:
-                QMessageBox.warning(self, "Validation Error", msg)
+                QMessageBox.warning(self, "验证错误", msg)
             return
 
         # Build config and write to ViewModel
@@ -879,7 +894,10 @@ class SetupPage(QWidget):
     def _build_config(self) -> dict:
         """Build the full compute_input dict from current form state."""
         models = [card.get_config() for card in self._model_cards]
-        direction = self._direction_combo.currentText()
+        if self._direction_checkbox.isChecked():
+            direction = "positive" if self._direction_combo.currentText() == DIRECTION_OPTIONS[0] else "negative"
+        else:
+            direction = "both"
         config = {
             "version": "2.0",
             "global_settings": {

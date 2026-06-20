@@ -99,11 +99,11 @@ class ComputationWorker(QObject):
 
             multi = None
             if len(models_config) > 1:
-                self.progress.emit(total, total, "Multi-model arbitration...")
+                self.progress.emit(total, total, "多模型仲裁中...")
                 from core.multi_model import arbitrate
                 multi = arbitrate(results, models_config, df)
 
-            self.progress.emit(total, total, "Complete!")
+            self.progress.emit(total, total, "完成!")
             self.finished.emit({"models": results, "multi_model": multi})
 
         except Exception as e:
@@ -129,7 +129,7 @@ class ComputationProgressPage(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(16)
 
-        self._title_label = QLabel("Running Analysis...")
+        self._title_label = QLabel("分析进行中...")
         self._title_label.setStyleSheet(
             "font-size: 18px; font-weight: bold; color: #374151;"
         )
@@ -155,7 +155,7 @@ class ComputationProgressPage(QWidget):
         """)
         layout.addWidget(self._progress_bar, 0, Qt.AlignCenter)
 
-        self._status_label = QLabel("Initializing...")
+        self._status_label = QLabel("初始化中...")
         self._status_label.setStyleSheet("color: #6b7280; font-size: 13px;")
         self._status_label.setAlignment(Qt.AlignCenter)
         self._status_label.setWordWrap(True)
@@ -176,23 +176,23 @@ class ComputationProgressPage(QWidget):
         self._status_label.setText(message)
 
         if total > 0 and current >= total:
-            self._title_label.setText("Complete!")
+            self._title_label.setText("完成!")
             self._title_label.setStyleSheet(
                 "font-size: 18px; font-weight: bold; color: #059669;"
             )
 
     def _on_finished(self, results: dict):
         """Pipeline completed normally."""
-        self._title_label.setText("Analysis Complete")
+        self._title_label.setText("分析完成")
         self._title_label.setStyleSheet(
             "font-size: 18px; font-weight: bold; color: #059669;"
         )
-        self._status_label.setText("All models processed successfully.")
+        self._status_label.setText("所有模型处理完成。")
         self._main_window.switch_to_tab(3)
 
     def _on_error(self, msg: str):
         """Pipeline encountered an error."""
-        self._title_label.setText("Error")
+        self._title_label.setText("错误")
         self._title_label.setStyleSheet(
             "font-size: 18px; font-weight: bold; color: #dc2626;"
         )
@@ -201,8 +201,8 @@ class ComputationProgressPage(QWidget):
     def reset(self):
         """Reset progress display for a new computation."""
         self._progress_bar.setValue(0)
-        self._title_label.setText("Running Analysis...")
+        self._title_label.setText("分析进行中...")
         self._title_label.setStyleSheet(
             "font-size: 18px; font-weight: bold; color: #374151;"
         )
-        self._status_label.setText("Initializing...")
+        self._status_label.setText("初始化中...")

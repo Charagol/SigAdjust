@@ -41,9 +41,9 @@ def _build_t_value_chart(model_result):
         annotation_text="p=0.05",
     )
     fig.update_layout(
-        title="|t|-value vs Deletions",
-        xaxis_title="Number of Deletions",
-        yaxis_title="|t-statistic|",
+        title="|t| 值随删除步数变化",
+        xaxis_title="删除步数",
+        yaxis_title="|t| 统计量",
         template="plotly_white",
         height=350,
         margin=dict(l=50, r=20, t=50, b=50),
@@ -65,9 +65,9 @@ def _build_f_chart(model_result):
         annotation_text="F=10",
     )
     fig.update_layout(
-        title="F-statistic vs Deletions",
-        xaxis_title="Number of Deletions",
-        yaxis_title="F-statistic",
+        title="F 统计量随删除步数变化",
+        xaxis_title="删除步数",
+        yaxis_title="F 统计量",
         template="plotly_white",
         height=300,
         margin=dict(l=50, r=20, t=40, b=40),
@@ -89,9 +89,9 @@ def _build_conflict_heatmap(multi_result):
         hovertemplate="Obs %{y}<br>%{x}: %{z:.3f}<extra></extra>",
     ))
     fig.update_layout(
-        title="Conflict Heatmap",
-        xaxis_title="Model",
-        yaxis_title="Observation ID",
+        title="冲突热力图",
+        xaxis_title="模型",
+        yaxis_title="观测序号",
         template="plotly_white",
         height=400,
         margin=dict(l=50, r=20, t=50, b=80),
@@ -117,9 +117,9 @@ def _build_pareto_chart(models_results):
         annotation_text="p=0.05",
     )
     fig.update_layout(
-        title="Pareto Overlay: |t| vs Deletions",
-        xaxis_title="Number of Deletions",
-        yaxis_title="|t-statistic|",
+        title="帕累托叠加: |t| 随删除步数",
+        xaxis_title="删除步数",
+        yaxis_title="|t| 统计量",
         template="plotly_white",
         height=350,
         margin=dict(l=50, r=20, t=50, b=50),
@@ -155,12 +155,12 @@ class SingleModelResults(QWidget):
 
         # Model selector
         sel_layout = QHBoxLayout()
-        sel_layout.addWidget(QLabel("Model:"))
+        sel_layout.addWidget(QLabel("模型:"))
         self._model_combo = QComboBox()
         self._model_combo.currentIndexChanged.connect(self._on_model_changed)
         sel_layout.addWidget(self._model_combo)
         sel_layout.addStretch()
-        self._refresh_btn = QPushButton("Refresh")
+        self._refresh_btn = QPushButton("刷新")
         self._refresh_btn.clicked.connect(self.refresh)
         sel_layout.addWidget(self._refresh_btn)
         layout.addLayout(sel_layout)
@@ -169,7 +169,7 @@ class SingleModelResults(QWidget):
         card_layout = QHBoxLayout()
         card_layout.setSpacing(8)
         self._metric_labels = {}
-        for label in ("Baseline |t|", "Final |t|", "Baseline p", "Final p", "R\u00b2", "Deleted"):
+        for label in ("基准 |t|", "最终 |t|", "基准 p", "最终 p", "R²", "已删除"):
             card = QFrame()
             card.setFixedHeight(60)
             card.setMinimumWidth(100)
@@ -208,7 +208,7 @@ class SingleModelResults(QWidget):
         layout.addWidget(self._path_table, stretch=2)
 
         # Export section
-        export_group = QGroupBox("Export")
+        export_group = QGroupBox("导出")
         export_layout = QVBoxLayout(export_group)
 
         btn_layout = QHBoxLayout()
@@ -229,7 +229,7 @@ class SingleModelResults(QWidget):
 
         # Light DTA + merge command
         lt_layout = QHBoxLayout()
-        self._light_dta_btn = QPushButton("Light DTA (id vars)")
+        self._light_dta_btn = QPushButton("轻量 DTA (ID 变量)")
         self._light_dta_btn.setStyleSheet(
             "QPushButton{border:1px solid #d1d5db;border-radius:4px;"
             "padding:4px 12px;font-size:12px;}"
@@ -294,12 +294,12 @@ class SingleModelResults(QWidget):
         r2 = final.get("r_squared", baseline.get("r_squared", 0))
         nd = final.get("n_deleted", 0) if final else 0
 
-        self._metric_labels["Baseline |t|"].setText(f"{bt:.3f}")
-        self._metric_labels["Final |t|"].setText(f"{ft:.3f}" if final else "--")
-        self._metric_labels["Baseline p"].setText(f"{bp:.4f}")
-        self._metric_labels["Final p"].setText(f"{fp:.4f}" if final else "--")
-        self._metric_labels["R\u00b2"].setText(f"{r2:.4f}")
-        self._metric_labels["Deleted"].setText(str(nd))
+        self._metric_labels["基准 |t|"].setText(f"{bt:.3f}")
+        self._metric_labels["最终 |t|"].setText(f"{ft:.3f}" if final else "--")
+        self._metric_labels["基准 p"].setText(f"{bp:.4f}")
+        self._metric_labels["最终 p"].setText(f"{fp:.4f}" if final else "--")
+        self._metric_labels["R²"].setText(f"{r2:.4f}")
+        self._metric_labels["已删除"].setText(str(nd))
 
         # t-value chart
         t_fig = _build_t_value_chart(model_result)
@@ -383,7 +383,7 @@ class SingleModelResults(QWidget):
             with open(fpath, "wb") as f:
                 f.write(data)
         except Exception as e:
-            QMessageBox.warning(self, "Export Error", str(e))
+            QMessageBox.warning(self, "导出错误", str(e))
 
     def _export_light(self):
         """Export lightweight DTA with id vars selection."""
@@ -400,8 +400,8 @@ class SingleModelResults(QWidget):
             return
 
         id_vars_str, ok = QInputDialog.getText(
-            self, "Light DTA Export",
-            "Enter id variable(s) separated by spaces:",
+            self, "轻量 DTA 导出",
+            "输入 ID 变量名，空格分隔:",
             text="id",
         )
         if not ok or not id_vars_str:
@@ -420,7 +420,7 @@ class SingleModelResults(QWidget):
             merge_cmd = export_light_dta(df, deleted_obs, name, id_vars, fpath)
             self._merge_cmd_label.setText(merge_cmd)
         except Exception as e:
-            QMessageBox.warning(self, "Export Error", str(e))
+            QMessageBox.warning(self, "导出错误", str(e))
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -443,7 +443,7 @@ class MultiModelResults(QWidget):
         card_layout = QHBoxLayout()
         card_layout.setSpacing(8)
         self._mm_labels = {}
-        for label in ("Conflict Coef", "Safe Intersection", "Models Analyzed"):
+        for label in ("冲突系数", "安全交集", "分析模型数"):
             card = QFrame()
             card.setFixedHeight(60)
             card.setMinimumWidth(120)
@@ -483,7 +483,7 @@ class MultiModelResults(QWidget):
 
         # Multi export
         export_layout = QHBoxLayout()
-        self._mm_export_btn = QPushButton("Export Multi CSV")
+        self._mm_export_btn = QPushButton("导出多模型 CSV")
         self._mm_export_btn.setStyleSheet(
             "QPushButton{border:1px solid #d1d5db;border-radius:4px;"
             "padding:4px 12px;font-size:12px;}"
@@ -506,9 +506,9 @@ class MultiModelResults(QWidget):
         si = len(multi.get("safe_intersection", []))
         nm = len(models)
 
-        self._mm_labels["Conflict Coef"].setText(f"{cc:.3f}")
-        self._mm_labels["Safe Intersection"].setText(str(si))
-        self._mm_labels["Models Analyzed"].setText(str(nm))
+        self._mm_labels["冲突系数"].setText(f"{cc:.3f}")
+        self._mm_labels["安全交集"].setText(str(si))
+        self._mm_labels["分析模型数"].setText(str(nm))
 
         # Heatmap
         hm = _build_conflict_heatmap(multi)
@@ -524,7 +524,7 @@ class MultiModelResults(QWidget):
         # Status table
         status_by = multi.get("status_by_model", {})
         if status_by:
-            cols = ["Model", "Target", "Achieved", "Status"]
+            cols = ["模型", "目标方向", "最终方向", "状态"]
             self._status_table.setColumnCount(len(cols))
             self._status_table.setHorizontalHeaderLabels(cols)
             self._status_table.setRowCount(len(status_by))
@@ -549,7 +549,7 @@ class MultiModelResults(QWidget):
             return
 
         fpath, _ = QFileDialog.getSaveFileName(
-            self, "Export Multi CSV", "sigadjust_multi.csv",
+            self, "导出多模型 CSV", "sigadjust_multi.csv",
             "CSV Files (*.csv)",
         )
         if not fpath:
@@ -583,8 +583,8 @@ class ResultsPage(QWidget):
         self._tab_widget = QTabWidget()
         self._single_results = SingleModelResults(self._vm)
         self._multi_results = MultiModelResults(self._vm)
-        self._tab_widget.addTab(self._single_results, "Single Model")
-        self._tab_widget.addTab(self._multi_results, "Multi Model")
+        self._tab_widget.addTab(self._single_results, "单模型结果")
+        self._tab_widget.addTab(self._multi_results, "多模型联动")
         layout.addWidget(self._tab_widget)
 
     def _connect_signals(self):

@@ -15,6 +15,7 @@
 ## V2.0 版本信息
 
 - **版本**: V2.0-dev
+| 2026-06-20 | Codex | 14a | Phase 14a: Bug 修复 + 中文化 + 方向 UI 修正 (变量候选空修复, 方向UI复选框, QComboBox宽度, Y/X并排布局, 全应用中文化7文件)
 | 2026-06-20 | Codex | 13 | Phase 13: 方向算法 + PyInstaller 打包 (_apply_direction_filter, 翻号+优化两阶段, 4新测试, 70 total, sigadjust.spec)
 | 2026-06-20 | Codex | 11 | Phase 11: Stata 快速导入 + 因子变量 (StataCommandParser 纯逻辑解析器, StataImportDialog 解析/预览/因子展开/自动填充, 7 个纯逻辑测试, 61 total)
 | 2026-06-20 | Codex | 10 | Phase 10: 模型配置页 (ModelCard + SetupPage, 多模型表单, XY冲突/Control排除, 配置JSON持久化, Stata导入占位)
@@ -43,7 +44,8 @@
 | 10 | 模型配置页 | 已完成 | 2026-06-20 | 2026-06-20 | ui/widgets/page_setup.py (ModelCard + SetupPage + StataImportDialog), ViewModel config_changed + save/load_config, MainWindow switch_to_tab |
 | 11 | Stata 快速导入 + 因子变量 | 已完成 | 2026-06-20 | 2026-06-20 | ui/widgets/stata_parser.py (StataCommandParser), 更新 StataImportDialog (解析/预览/因子展开/填充表单), 7 个 parser 测试 |
 | 12 | 计算进度 + 结果展示 + 导出优化 | 已完成 | 2026-06-20 | 2026-06-20 |
-| 13 | 方向算法 + PyInstaller 打包 | 已完成 | 2026-06-20 | 2026-06-20 | 方向选择(正/负/双向), 翻号+优化两阶段, 4新测试, 70 total page_progress.py (ComputationWorker+QThread), page_results.py (Plotly/QWebEngineView+导出), export.py (order列+light DTA+merge cmd), 3 个 export 测试, 70 total |
+| 13 | 方向算法 + PyInstaller 打包 | 已完成 | 2026-06-20 | 2026-06-20 | 方向选择(正/负/双向), 翻号+优化两阶段, 4新测试, 70 total
+| 14a | Bug 修复 + 中文化 + 方向 UI 修正 | 已完成 | 2026-06-20 | 2026-06-20 | 变量候选为空修复, 方向UI改为勾选框, QComboBox宽度, Y/X并排, 全应用中文化(7个UI文件) page_progress.py (ComputationWorker+QThread), page_results.py (Plotly/QWebEngineView+导出), export.py (order列+light DTA+merge cmd), 3 个 export 测试, 70 total |
 
 ---
 
@@ -114,6 +116,7 @@
 
 | 日期 | 变更人 | Phase | 变更内容 |
 |------|--------|-------|---------|
+| 2026-06-20 | Codex | 14a | Phase 14a: Bug 修复 + 中文化 + 方向 UI 修正 (变量候选空修复, 方向UI复选框, QComboBox宽度, Y/X并排布局, 全应用中文化7文件)
 | 2026-06-20 | Codex | 13 | Phase 13: 方向算法 + PyInstaller 打包 (_apply_direction_filter, 翻号+优化两阶段, 4新测试, 70 total, sigadjust.spec)
 | 2026-06-20 | Codex | 11 | Phase 11: Stata 快速导入 + 因子变量 (StataCommandParser 纯逻辑解析器, StataImportDialog 解析/预览/因子展开/自动填充, 7 个纯逻辑测试, 61 total)
 | 2026-06-20 | Codex | 10 | Phase 10: 模型配置页 (ModelCard + SetupPage, 多模型表单, XY冲突/Control排除, 配置JSON持久化, Stata导入占位)
