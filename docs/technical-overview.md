@@ -1,6 +1,6 @@
-# SigAdjust V1.0 — Technical Overview
+# SigAdjust V2.0  Technical Overview
 
-> Generated: 2026-06-20 | Tests: 48/48 | Status: Released
+> Generated: 2026-06-21 | Tests: 70/70 | Status: Released
 
 A one-page overview for anyone taking over the project.
 
@@ -8,111 +8,116 @@ A one-page overview for anyone taking over the project.
 
 ## Architecture
 
+V2.0 replaces the Streamlit UI layer with PySide6 desktop widgets
+while preserving the core/ computation layer entirely unchanged.
+
 ```
-Browser (Streamlit UI)
-  |
-  v
-app.py  (entry point, st.navigation with 4 pages)
-  |
-  +-- ui/page_data.py     (Page 1: data import)
-  +-- ui/page_setup.py    (Page 2: model configuration, 1-4 models)
-  +-- ui/page_progress.py (Page 3: computation progress, threading)
-  +-- ui/page_results.py  (Page 4: results display + export)
-  |
-  +-- core/pipeline.py    (orchestrator: compute_input -> compute_output)
-       |
-       +-- core/greedy_search.py  (OLS single-model greedy)
-       +-- core/models/ols_model.py, logit_model.py, fe_model.py, iv_model.py
-       +-- core/influence.py      (post-deletion t-value computation)
-       +-- core/spec_enum.py      (control variable combinations)
-       +-- core/multi_model.py    (safe intersection, conflict matrix, weighted greedy)
-       +-- core/export.py         (CSV, DTA, Excel, HTML)
+main.py  ->  QApplication
+                 |
+          MainWindow(QTabWidget, 4 tabs)
+           |         |           |
+      DataPage  SetupPage  ProgressPage  ResultsPage
+           |         |           |            |
+           +--- SigAdjustViewModel ----+   (Signal/Slot bridge)
+                     |
+                 core/ (unchanged, 49 tests)
 ```
 
-**Key constraint**: `core/` modules never import `streamlit`. All functions accept/return Python dicts, DataFrames, or bytes.
-
-**State management**: All shared state flows through `st.session_state` (no database, no Redis):
-
-| Key | Type | Writer | Reader |
-|-----|------|--------|--------|
-| `df` | `pd.DataFrame` | Page 1 | Pages 2, 4 |
-| `columns_info` | `dict` | Page 1 | Page 2 |
-| `config` | `dict` (compute_input) | Page 2 | Page 3 |
-| `results` | `dict` (compute_output) | Page 3 | Page 4 |
-| `export_df` | `pd.DataFrame` | Page 4 | Page 4 |
-| `progress` | `dict` | Page 3 | Page 3 |
-
-`compute_input` / `compute_output` contracts are defined in `docs/design-v1.md` sections 4.2-4.3.
+Key architectural change: V1 used st.session_state for shared state and
+threading.Thread for background computation (3 known bugs). V2 uses a
+dedicated ViewModel class with Qt Signal/Slot for reactive UI updates
+and QThread for sandboxed background computation.
 
 ## Module Inventory
 
-### core/ (pure computation, no UI dependency)
+### Entry / UI Layer (ui/)
 
-| File | Lines | Responsibility |
-|------|-------|---------------|
-| `validation.py` | ~60 | Column existence/type checks, missing value stats |
-| `spec_enum.py` | ~25 | `itertools.combinations` enumeration of control variable subsets |
-| `models/ols_model.py` | ~80 | OLS fit + `OLSInfluence` diagnostics |
-| `models/logit_model.py` | ~180 | Logit/Probit fit + one-step Newton approx. + exact MLE greedy |
-| `models/fe_model.py` | ~200 | FWL demaining via `pyfixest.feols` + demeaned OLS diagnostics |
-| `models/iv_model.py` | ~160 | CFA decomposition (dual OLS), stage-1 F tracking |
-| `influence.py` | ~70 | Post-deletion t-value: `params_not_obsi / sqrt(sigma2 * XtX_inv)` |
-| `greedy_search.py` | ~120 | Single-model OLS greedy iterative deletion loop |
-| `multi_model.py` | ~200 | Safe intersection, conflict matrix, weighted greedy, layered relaxation |
-| `pipeline.py` | ~90 | Entry point: routes model type to correct greedy function, calls `arbitrate` |
-| `export.py` | ~120 | CSV, DTA (32-char truncation), Excel (2-sheet), HTML (self-contained) |
+| File | Responsibility |
+|------|---------------|
+| `main.py` | PySide6 entry point, creates QApplication and MainWindow |
+| `ui/main_window.py` | MainWindow(QMainWindow) with QTabWidget (4 tabs) + global QSS |
+| `ui/viewmodel.py` | SigAdjustViewModel — single source of truth, Signal/Slot bridge |
+| `ui/widgets/page_data.py` | DataPage — file open (CSV/DTA/Excel), preview, column info |
+| `ui/widgets/page_setup.py` | SetupPage — multi-model config, ModelCard, direction UI, Stata import |
+| `ui/widgets/page_progress.py` | ComputationWorker(QThread) + ComputationProgressPage |
+| `ui/widgets/page_results.py` | ResultsPage — t/F charts (Plotly), deletion path, export (4 formats) |
+| `ui/widgets/variable_selector.py` | VariableSelector — tag-based search+select, FlowLayout, max_selection |
+| `ui/widgets/stata_parser.py` | StataCommandParser — parse reg/logit/probit/reghdfe commands |
 
-### ui/ (Streamlit pages)
+### Core Computation (core/)  all unchanged from V1
 
-| File | Phase | Functionality |
-|------|-------|---------------|
-| `page_data.py` | 1 | File upload (CSV/DTA/Excel), data preview, column info |
-| `page_setup.py` | 2-7 | Multi-model form (up to 4), model type selector, FE/IV conditional fields |
-| `page_progress.py` | 3 | Threading-based pipeline execution, progress bar/status |
-| `page_results.py` | 3-8 | Single-model curves + deletion paths, multi-model heatmap/Pareto, 4-format export |
-| `pages.py` | — | Shared page function references (avoids circular imports) |
+| File | Responsibility |
+|------|---------------|
+| `core/spec_enum.py` | Specification enumeration for robustness checks |
+| `core/validation.py` | Input validation, missing value summary |
+| `core/models/ols_model.py` | OLS fit + diagnostics via statsmodels OLSInfluence |
+| `core/models/logit_model.py` | Logit/Probit fit + one-step Newton diagnostics |
+| `core/models/fe_model.py` | Fixed effects via FWL demean + OLS |
+| `core/models/iv_model.py` | 2SLS/IV via Control Function Approach + dual OLS |
+| `core/influence.py` | Post-deletion t-value computation, DFBETA |
+| `core/greedy_search.py` | Greedy deletion algorithm + direction filter |
+| `core/pipeline.py` | Orchestrator: compute_input -> compute_output |
+| `core/multi_model.py` | Multi-model arbitration: safe intersection, conflict matrix |
+| `core/export.py` | 4-format export (CSV/DTA/Excel/HTML) + light DTA + multi CSV |
 
-### tests/ (48 tests)
+### Packaging
 
-```
-test_validation.py    10 tests   (pure function coverage)
-test_spec_enum.py      3 tests   (empty/single/multi control vars)
-test_ols_model.py      2 tests   (contract validation)
-test_influence.py      4 tests   (t-value formula correctness)
-test_greedy_search.py  5 tests   (monotonicity, budget, uniqueness)
-test_logit_model.py    6 tests   (fit + greedy + dfbetas interpretation)
-test_fe_model.py       3 tests   (FWL beta = pyfixest beta)
-test_multi_model.py   11 tests   (intersection, conflict, recommendations, arbitrate)
-test_iv_model.py       4 tests   (CFA beta = IV2SLS beta, F tracking)
-```
+| File | Purpose |
+|------|---------|
+| `sigadjust.spec` | PyInstaller --onefile build config |
+| `requirements.txt` | Python dependencies (PySide6, statsmodels, pandas, plotly, ...) |
+
+## Data Contract
+
+compute_input / compute_output contracts are UNCHANGED from V1.
+See docs/design-v1.md sections 4.2-4.3 for the full specification.
+
+V2 additions:
+- `global_settings.direction`: "both" | "positive" | "negative"
+- `final.direction_achieved`: final direction state from direction algorithm
+- `deletion_path[].direction`: "default" | "sign_flip" | "optimize"  phase label
+
+## Test Distribution (70 total)
+
+| Area | Count | What |
+|------|-------|------|
+| core OLS / influence | 10 | fit_ols, diagnostics, deletion t-values |
+| core greedy_search | 9 | greedy deletion + 4 direction tests |
+| core logit/probit | 6 | fit_logit, dfbetas, greedy loop |
+| core FE | 3 | fit_fe, pyfixest comparison, greedy loop |
+| core IV | 4 | CFA equivalence, fit_iv, greedy loop |
+| core multi_model | 11 | conflict matrix, arbitration logic |
+| core export | 5 | order column, light DTA, merge cmd |
+| core validation | 8 | column check, type check, missing summary |
+| core spec_enum | 3 | specification enumeration |
+| ViewModel | 4 | load_data, signal emission |
+| StataParser | 7 | 5 command types, factor vars, error cases |
+| placeholder | 1 | import check |
+
+## Technology Decisions (V2)
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| UI Framework | PySide6 (not PyQt6) | LGPL license, commercial-friendly, official recommendation |
+| Packaging | PyInstaller --onefile | Mature, single .exe distribution |
+| Architecture | ViewModel + Signal/Slot | Keeps core/ pure, UI testable, V1 data contract intact |
+| Background computation | QThread + Signal (not concurrent.futures) | Qt-native threading, natural Signal/Slot integration |
+| Charts | Plotly (same as V1) | Interactive quality, embeddable via QWebEngineView |
+| Config persistence | JSON (not pickle/TOML) | Human-readable, cross-platform, version-controllable |
+| Stata parser | Regex-based (5 commands) | Phase 1 scope defined, no heavy parser needed |
+| Direction algorithm | Two-phase (sign_flip -> optimize) | Explainable behavior, user-predictable, compatible with greedy |
+| Variable selector | Custom QWidget (tags + search + grid) | Click-target variable names, no checkboxes, mutual exclusion |
 
 ## Design-Implementation Deviations
 
-Documented differences between the original technical spec and final implementation:
-
 | Item | Spec | Implementation |
-|------|------|----------------|
-| 2SLS diagnostics | Brute-force LOO both stages | CFA-OLS with stage-2 `OLSInfluence` |
-| Logit dfbetas units | Unspecified | Confirmed standardized (units = SE) via n=200 verification; formula: `t = beta/bse - dfbetas` |
-| weighted_greedy threshold | Dynamic t-value threshold per model | Uses hardcoded `1.96` (p~0.05); should be derived from t-distribution with model df |
-| FE demean | One-time or per-iteration? | Re-demands every greedy iteration (group means change after deletion) |
-| spec_curves | One per control combination | Phase 1-8 implementation tracks per-iteration t-value; full spec curve enumeration deferred |
-
-## Known Limitations
-
-- **Greedy algorithm**: Stepwise optimal, not globally optimal. Deletion of k observations may not be the best k-subset.
-- **CFA standard errors**: Omit first-stage sampling error. Sufficient for deletion ranking, insufficient for exact inference.
-- **DTA column names**: Truncated to 32 characters with `_trunc` suffix. Chinese column names replaced with underscores. Use CSV/Excel for full name preservation.
-- **2SLS instruments**: Must be valid (F > 10 recommended). Weak instruments are detected but not blocked.
-- **Multi-model upper limit**: 4 models maximum; UI hard-coded constraint.
-- **FE second-order effects**: FWL demean ignores that deleting an observation changes group means for other observations in the same group (O(1/T_i) effect).
-
-## Development Workflow
-
-```
-1. Write test in tests/
-2. Implement in core/
-3. python -m pytest tests/ -q --ignore=tests/test_placeholder.py
-4. Update docs/task-tracker.md
-5. rm -f .git/index.lock && git add -A && git commit -m "feat: ..."
-```
+|:-----|:-----|:---------------|
+| Weighted greedy | 1.96 hardcoded | Needed improvement but lower priority |
+| FE each iteration | Re-demean each iteration | Kept current behavior |
+| Setting curve enumeration | Full enumeration | Deferred to V3 |
+| UI framework (V2) | PySide6 | Replaced Streamlit, full Chinese UI |
+| Direction control (V2) | Two-phase (sign_flip -> optimize) | _apply_direction_filter helper function |
+| Value label (V2) | No special handling | DTA files loaded with convert_categoricals=False |
+| XY selection (V2) | Y single, X up to 2 | VariableSelector max_selection property |
+| NaN handling (V2) | Stata-like dropna | Added to all 4 model fit functions |
+| Non-numeric detection (V2) | Clear Chinese error message | Added to all 4 model fit functions |

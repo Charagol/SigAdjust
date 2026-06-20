@@ -14,8 +14,9 @@
 
 ## V2.0 版本信息
 
-- **版本**: V2.0-dev
+- **版本**: V2.0
 | 2026-06-20 | Codex | 14a | Phase 14a: Bug 修复 + 中文化 + 方向 UI 修正 (变量候选空修复, 方向UI复选框, QComboBox宽度, Y/X并排布局, 全应用中文化7文件)
+| 2026-06-21 | Codex | final | V2.0 收尾封存 (文档封存/目录清理/70测试通过) |
 | 2026-06-20 | Codex | 13 | Phase 13: 方向算法 + PyInstaller 打包 (_apply_direction_filter, 翻号+优化两阶段, 4新测试, 70 total, sigadjust.spec)
 | 2026-06-20 | Codex | 11 | Phase 11: Stata 快速导入 + 因子变量 (StataCommandParser 纯逻辑解析器, StataImportDialog 解析/预览/因子展开/自动填充, 7 个纯逻辑测试, 61 total)
 | 2026-06-20 | Codex | 10 | Phase 10: 模型配置页 (ModelCard + SetupPage, 多模型表单, XY冲突/Control排除, 配置JSON持久化, Stata导入占位)
@@ -23,7 +24,9 @@
 | 2026-06-20 | Codex | 4-5 | Phase 4: Logit/Probit + Phase 5: FE (9 new tests, 33 total, model type selector) Logit/Probit 支持 (6 tests, dfbetas standardized formula confirmed)
 | 2026-06-20 | Codex | 1-3 | Batch 1: 前置清理 + 数据导入页面 + OLS 核心计算 + 全流程 UI (24 tests) |
 - **创建日期**: 2026-06-18
-- **目标发布日期**: 2026-06-20
+- **状态**: 已完成
+- **完成日期**: 2026-06-21
+- **总测试**: 70
 
 ---
 
@@ -31,15 +34,7 @@
 
 | Phase | 名称 | 状态 | 开始日期 | 完成日期 | 备注 |
 |-------|------|------|---------|---------|------|
-| 0 | 项目初始化 | 已完成 | 2026-06-18 | 2026-06-18 | 12 个文件 (references/ 由 .gitignore 排除) |
-| 1 | 数据导入页面 | 已完成 | 2026-06-20 | 2026-06-20 | page_data.py, validation.py, 10 tests | — | — | page_data.py + validation.py |
-| 2 | OLS 核心计算 | 已完成 | 2026-06-20 | 2026-06-20 | spec_enum, ols_model, influence, greedy_search, pipeline, 14 tests | — | — | spec_enum, ols_model, influence, greedy |
-| 3 | OLS 全流程 UI | 已完成 | 2026-06-20 | 2026-06-20 | page_setup, page_progress, page_results, app.py 修改 |
-| 4 | Logit/Probit 支持 | 已完成 | 2026-06-20 | 2026-06-20 | logit_model.py, 6 tests, pipeline routing | — | — | logit_model.py |
-| 5 | 固定效应支持 | 已完成 | 2026-06-20 | 2026-06-20 | fe_model.py (FWL), 3 tests, UI model selector, pyfixest | — | — | fe_model.py（pyfixest + FWL 退化） |
-| 6 | 多模型联动 | 已完成 | 2026-06-20 | 2026-06-20 | multi_model.py (11 tests), pipeline+UI, 44 total | — | — | multi_model.py, 冲突矩阵, 安全交集 |
-| 7 | 2SLS/IV 支持 | 已完成 | 2026-06-20 | 2026-06-20 | iv_model.py (4 tests), CFA strategy, pipeline+UI | — | — | iv_model.py（CFA 分解） |
-| 8 | 导出 + 部署 | 已完成 | 2026-06-20 | 2026-06-20 | export.py (4 formats), README.md, UI wired | — | — | export.py, README, 可选 Docker |
+| 0-8 | V1.0 基础架构 (Phase 0-8) | 已完成 | 2026-06-18 | 2026-06-20 | Streamlit 基础架构与 5 种模型核心功能，48 测试 |
 | 9 | PySide6 骨架 + 数据导入页 | 已完成 | 2026-06-20 | 2026-06-20 | main.py, ui/viewmodel.py, ui/main_window.py, ui/widgets/page_data.py, ui/widgets/variable_selector.py, 4 new tests |
 | 10 | 模型配置页 | 已完成 | 2026-06-20 | 2026-06-20 | ui/widgets/page_setup.py (ModelCard + SetupPage + StataImportDialog), ViewModel config_changed + save/load_config, MainWindow switch_to_tab |
 | 11 | Stata 快速导入 + 因子变量 | 已完成 | 2026-06-20 | 2026-06-20 | ui/widgets/stata_parser.py (StataCommandParser), 更新 StataImportDialog (解析/预览/因子展开/填充表单), 7 个 parser 测试 |
@@ -63,10 +58,12 @@
 | iv_model | fit_iv | (df, dv, kv, cv, endog, instr) -> dict | CFA dual-stage fit | 2026-06-20 |
 | iv_model | run_iv_greedy | (df, dv, kv, cv, endog, instr, thresh, max_pct) -> dict | IV greedy deletion | 2026-06-20 |
 | influence | compute_deletion_t_values | (params_not_obsi, sigma2, XtX_inv_diag, idx) -> ndarray | Post-deletion t-values (OLS) | 2026-06-20 |
-| greedy_search | greedy_deletion | (df, dv, kv, cv, thresh, max_pct) -> dict | OLS single-model greedy loop | 2026-06-20 |
+| greedy_search | greedy_deletion | (df, dv, kv, cv, thresh, max_pct, direction) -> dict | OLS single-model greedy loop | 2026-06-21 |
 | pipeline | run_pipeline | (compute_input) -> compute_output | Orchestrator, routes to model-specific functions | 2026-06-20 |
 | multi_model | arbitrate | (results, configs, df) -> dict | Safe intersection + conflict matrix + weighted greedy | 2026-06-20 |
 | export | export_csv/export_dta/export_excel/export_html | (df, deleted_obs, model_name, ...) -> bytes | 4-format export | 2026-06-20 |
+| viewmodel | SigAdjustViewModel | Signal: data_loaded/calculation_finished, Property: df/columns_info/config/results | UI state management | 2026-06-21 |
+| variable_selector | VariableSelector | set_items/select_selection/set_max_selection -> list[str] | Tag-based search+select widget | 2026-06-21 |
 
 ---
 
@@ -95,6 +92,10 @@
 - 冲突系数 = 1 − |安全交集| / |并集|
 - 冲突矩阵: 逐观测值影响方向（+有利/−有害）+ 影响幅度
 - 建议逻辑: 全同向推荐 / 部分有害警告 / 严重不可逆阻止 / 无交集建议拆分
+
+### 方向算法（§3.5）
+- 两步式：翻号阶段（β符号不一致时优先删除使β朝目标方向移动的观测）→ 优化阶段（符号一致后只保留使t值朝目标方向改善的候选）
+- direction="both" = 不区分方向，等价于V1原有行为
 
 ### 标识符变量（§9.1）
 
