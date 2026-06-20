@@ -271,20 +271,53 @@ class ModelCard(QGroupBox):
         layout.addLayout(title_layout)
 
         # ── Variable selectors ──
-        # Y (dependent variable)
+        # Y/X side by side with visual distinction
+        yx_layout = QHBoxLayout()
+        yx_layout.setSpacing(12)
+
+        # Y frame (blue left border)
+        y_frame = QFrame()
+        y_frame.setStyleSheet("""
+            QFrame {
+                background: #f8faff;
+                border: 1px solid #e0e7ff;
+                border-left: 3px solid #4f46e5;
+                border-radius: 4px;
+                padding: 8px;
+            }
+        """)
+        yf_layout = QVBoxLayout(y_frame)
+        yf_layout.setContentsMargins(8, 8, 8, 8)
+        yf_layout.setSpacing(4)
         self.y_selector = VariableSelector()
-        self.y_selector.set_items(self._all_vars)
         self.y_selector.set_max_selection(1)
-        layout.addWidget(QLabel("被解释变量 (Y):"))
-        layout.addWidget(self.y_selector)
+        self.y_selector.set_items(self._all_vars)
+        yf_layout.addWidget(QLabel("被解释变量 (Y):"))
+        yf_layout.addWidget(self.y_selector)
+        yx_layout.addWidget(y_frame)
 
-        # X (key explanatory variable)
+        # X frame (green left border)
+        x_frame = QFrame()
+        x_frame.setStyleSheet("""
+            QFrame {
+                background: #f0fdf4;
+                border: 1px solid #dcfce7;
+                border-left: 3px solid #22c55e;
+                border-radius: 4px;
+                padding: 8px;
+            }
+        """)
+        xf_layout = QVBoxLayout(x_frame)
+        xf_layout.setContentsMargins(8, 8, 8, 8)
+        xf_layout.setSpacing(4)
         self.x_selector = VariableSelector()
-        self.x_selector.set_items(self._all_vars)
         self.x_selector.set_max_selection(2)
-        layout.addWidget(QLabel("核心解释变量 (X):"))
-        layout.addWidget(self.x_selector)
+        self.x_selector.set_items(self._all_vars)
+        xf_layout.addWidget(QLabel("核心解释变量 (X):"))
+        xf_layout.addWidget(self.x_selector)
+        yx_layout.addWidget(x_frame)
 
+        layout.addLayout(yx_layout)
         # Control variables
         self.control_selector = VariableSelector()
         self.control_selector.set_items(self._all_vars)

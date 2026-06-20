@@ -110,8 +110,16 @@ class SigAdjustViewModel(QObject):
             elif ext == ".dta":
                 df = pd.read_stata(filepath, convert_categoricals=False)
             # Decode Stata str## bytes to strings
-                for col in df.select_dtypes(include=[bytes]).columns:
-                    df[col] = df[col].apply(lambda x: x.decode("utf-8", errors="replace") if isinstance(x, bytes) else x)
+                for col in df.columns:
+                    try:
+                        if df[col].dtype == object:
+                            sample = df[col].dropna()
+                            if len(sample) > 0 and isinstance(sample.iloc[0], bytes):
+                                df[col] = df[col].apply(
+                                    lambda x: x.decode("utf-8", errors="replace") if isinstance(x, bytes) else str(x)
+                                )
+                    except TypeError:
+                        pass
             elif ext in (".xlsx", ".xls"):
                 df = pd.read_excel(filepath)
             else:

@@ -218,20 +218,6 @@ class VariableSelector(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(2)
 
-        # Tag area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll.setMaximumHeight(80)
-        scroll.setStyleSheet("border: none; background: transparent;")
-
-        self._tag_container = QWidget()
-        self._tag_container.setStyleSheet("background: transparent;")
-        self._tag_layout = FlowLayout(self._tag_container, margin=0, spacing=4)
-        scroll.setWidget(self._tag_container)
-        main_layout.addWidget(scroll)
-
         # Search input
         search_layout = QHBoxLayout()
         search_layout.setContentsMargins(0, 0, 0, 0)
@@ -250,6 +236,20 @@ class VariableSelector(QWidget):
         self._search_box.installEventFilter(self)
         search_layout.addWidget(self._search_box)
         main_layout.addLayout(search_layout)
+
+        # Tag area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setMaximumHeight(80)
+        scroll.setStyleSheet("border: none; background: transparent;")
+
+        self._tag_container = QWidget()
+        self._tag_container.setStyleSheet("background: transparent;")
+        self._tag_layout = FlowLayout(self._tag_container, margin=0, spacing=4)
+        scroll.setWidget(self._tag_container)
+        main_layout.addWidget(scroll)
 
         # Dropdown popup with candidates
         self._popup = QFrame(self)

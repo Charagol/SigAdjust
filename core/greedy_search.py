@@ -51,10 +51,10 @@ def _apply_direction_filter(
     Returns:
         Tuple of (scores, phase_label):
         - scores: selection scores (higher = better candidate).
-        - phase_label: "none", "sign_flip", or "optimize".
+        - phase_label: "default", "sign_flip", or "optimize".
     """
     if direction == "both":
-        return np.abs(t_del), "none"
+        return np.abs(t_del), "default"
 
     target_positive = direction == "positive"
     sign_matches = (current_beta >= 0) == target_positive
@@ -142,7 +142,7 @@ def greedy_deletion(
             )
         else:
             scores = np.abs(t_del)
-            phase_label = "none"
+            phase_label = "default"
 
         # Step 3c: Select best candidate
         best_idx_in_remaining = int(np.argmax(scores))

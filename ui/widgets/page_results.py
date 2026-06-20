@@ -203,7 +203,7 @@ class SingleModelResults(QWidget):
         )
         self._path_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self._path_table.setAlternatingRowColors(True)
-        self._path_table.horizontalHeader().setStretchLastSection(True)
+        self._path_table.horizontalHeader().setStretchLastSection(False)
         self._path_table.verticalHeader().setDefaultSectionSize(22)
         layout.addWidget(self._path_table, stretch=2)
 
@@ -323,9 +323,15 @@ class SingleModelResults(QWidget):
             for r, row in enumerate(path):
                 for c, col in enumerate(cols):
                     val = row.get(col, "")
+                    if col == "obs_id" and isinstance(val, (int, float)):
+                        val = int(val) + 1
                     item = QTableWidgetItem(str(val) if val is not None else "")
                     self._path_table.setItem(r, c, item)
-            self._path_table.resizeColumnsToContents()
+            self._path_table.horizontalHeader().setStretchLastSection(False)
+            column_widths = {"step": 40, "obs_id": 60, "t_after": 100, "p_after": 100, "direction": 90}
+            for c_idx, col in enumerate(cols):
+                width = column_widths.get(col, 100)
+                self._path_table.setColumnWidth(c_idx, width)
         else:
             self._path_table.setRowCount(0)
             self._path_table.setColumnCount(0)
