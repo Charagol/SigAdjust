@@ -792,11 +792,32 @@ class SetupPage(QWidget):
     # ── Action Handlers ──────────────────────────────────────────────
 
     def _on_data_loaded(self, df):
-        """Refresh all variable selectors when new data is loaded."""
+        """重置所有模型卡选择并刷新候选列表。"""
+        # 重置为单个默认模型卡
+        while len(self._model_cards) > 1:
+            card = self._model_cards.pop(-1)
+            self._cards_layout.removeWidget(card)
+            card.deleteLater()
+
+        # 清空第一个卡片的所有选择
+        if self._model_cards:
+            card = self._model_cards[0]
+            card.y_selector.set_selected([])
+            card.x_selector.set_selected([])
+            card.control_selector.set_selected([])
+            card.fe_selector.set_selected([])
+            card.endog_selector.set_selected([])
+            card.instr_selector.set_selected([])
+            card._name_input.setText("")
+            card._priority_slider.setValue(5)
+            card._target_p_spin.setValue(0.05)
+
+        # 更新候选列表
         all_vars = self._get_all_vars()
         for card in self._model_cards:
             card.update_all_items(all_vars)
         self._update_all_control_items()
+        self._update_add_button()
 
     def _on_stata_import(self):
         """Open the Stata import placeholder dialog."""
