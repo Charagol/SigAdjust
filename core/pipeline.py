@@ -25,6 +25,7 @@ def run_pipeline(compute_input: dict) -> dict:
 
     significance_threshold = settings.get("significance_threshold", 0.05)
     max_deletions_pct = settings.get("max_deletions_pct", 5.0)
+    direction = settings.get("direction", "both")
 
     results = {}
 
@@ -41,6 +42,7 @@ def run_pipeline(compute_input: dict) -> dict:
                 control_vars=model_cfg.get("control_vars", []),
                 significance_threshold=target_p,
                 max_deletions_pct=max_deletions_pct,
+                direction=direction,
             )
             results[name] = result
         elif model_type in ("logit", "probit"):
@@ -53,6 +55,7 @@ def run_pipeline(compute_input: dict) -> dict:
                 significance_threshold=target_p,
                 max_deletions_pct=max_deletions_pct,
                 model_type=model_type,
+                direction=direction,
             )
             results[name] = result
         elif model_type == "iv":
@@ -66,6 +69,7 @@ def run_pipeline(compute_input: dict) -> dict:
                 instruments=model_cfg.get("instruments", []),
                 significance_threshold=target_p,
                 max_deletions_pct=max_deletions_pct,
+                direction=direction,
             )
             results[name] = result
         elif model_type == "fe":
@@ -78,6 +82,7 @@ def run_pipeline(compute_input: dict) -> dict:
                 fe_vars=model_cfg.get("fe_vars", []),
                 significance_threshold=target_p,
                 max_deletions_pct=max_deletions_pct,
+                direction=direction,
             )
             results[name] = result
         else:

@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
+from core.greedy_search import _apply_direction_filter
+
 
 def fit_logit(
     df: pd.DataFrame,
@@ -103,6 +105,7 @@ def run_logit_greedy(
     max_deletions_pct: float,
     model_type: str = "logit",
     exact: bool = False,
+    direction: str = "both",
 ) -> dict:
     """Run greedy iterative deletion for a single Logit/Probit model.
 
@@ -129,6 +132,7 @@ def run_logit_greedy(
     baseline = result["baseline"]
     p_current = baseline["p_value"]
     t_current = baseline["t_stat"]
+    beta_current = baseline["beta"]
 
     spec_path = [{"n_del": 0, "t": round(t_current, 6)}]
     deletion_path = []
@@ -163,14 +167,31 @@ def run_logit_greedy(
                 diag["key_var_index"],
             )
 
-        # Select observation with maximum |t|
-        t_abs = np.abs(t_del)
-        best_idx_in_remaining = int(np.argmax(t_abs))
-        t_best = float(t_del[best_idx_in_remaining])
+        # Apply direction filter if needed
+        if direction != "both":
+            beta_vec = diag["params"]
+            bse_vec = diag["bse"]
+            key_idx = diag["key_var_index"]
+            beta_del = beta_vec[key_idx] - diag["dfbetas"][:, key_idx] * bse_vec[key_idx]
+            scores, phase_label = _apply_direction_filter(
+                t_del=t_del, current_t=t_current,
+                current_beta=beta_current, beta_del=beta_del,
+                direction=direction,
+            )
+        else:
+            scores = np.abs(t_del)
+            phase_label = "none"
 
-        # Check for improvement
-        if abs(t_best) <= abs(t_current):
-            break
+        # Select best candidate
+        best_idx_in_remaining = int(np.argmax(scores))
+
+        if phase_label == "sign_flip":
+            if scores[best_idx_in_remaining] <= 0.0:
+                break
+        else:
+            t_best = float(t_del[best_idx_in_remaining])
+            if abs(t_best) <= abs(t_current):
+                break
 
         # Delete the observation
         obs_orig_idx = int(df_remaining.iloc[best_idx_in_remaining]["__orig_idx__"])
@@ -182,6 +203,7 @@ def run_logit_greedy(
         result = fit_logit(df_remaining, dependent_var, key_var, control_vars, model_type)
         t_current = result["baseline"]["t_stat"]
         p_current = result["baseline"]["p_value"]
+        beta_current = result["baseline"]["beta"]
 
         # Record step
         step = len(deletion_path) + 1
@@ -190,6 +212,7 @@ def run_logit_greedy(
             "obs_id": int(obs_orig_idx),
             "t_after": round(float(t_current), 6),
             "p_after": round(float(p_current), 6),
+            "direction": phase_label,
         })
         spec_path.append({
             "n_del": step,
@@ -200,6 +223,13 @@ def run_logit_greedy(
     final_result = fit_logit(df_remaining, dependent_var, key_var, control_vars, model_type)
     fb = final_result["baseline"]
 
+    if direction == "both":
+        direction_achieved = "both"
+    elif fb["beta"] >= 0:
+        direction_achieved = "positive"
+    else:
+        direction_achieved = "negative"
+    
     return {
         "baseline": {
             "beta": round(baseline["beta"], 6),
@@ -219,6 +249,7 @@ def run_logit_greedy(
             "r_squared": round(fb["r_squared"], 6),
             "deleted_obs": deleted_orig_indices,
             "n_deleted": len(deleted_orig_indices),
+            "direction_achieved": direction_achieved,
         },
         "spec_curves": [
             {

@@ -19,6 +19,7 @@ import pandas as pd
 import statsmodels.api as sm
 
 from core.influence import compute_deletion_t_values
+from core.greedy_search import _apply_direction_filter
 
 
 def _run_stage1(df, endogenous_var, instruments, control_vars):
@@ -111,6 +112,7 @@ def run_iv_greedy(
     instruments: list[str],
     significance_threshold: float,
     max_deletions_pct: float,
+    direction: str = "both",
 ) -> dict:
     """Greedy iterative deletion for 2SLS via CFA.
 
@@ -128,6 +130,7 @@ def run_iv_greedy(
     baseline = result["baseline"]
     p_current = baseline["p_value"]
     t_current = baseline["t_stat"]
+    beta_current = baseline["beta"]
     f_current = baseline["stage1_f"]
 
     spec_path = [{"n_del": 0, "t": round(t_current, 6)}]
@@ -144,12 +147,27 @@ def run_iv_greedy(
             diag["key_var_index"],
         )
 
-        t_abs = np.abs(t_del)
-        best_idx = int(np.argmax(t_abs))
-        t_best = float(t_del[best_idx])
+        # Apply direction filter if needed
+        if direction != "both":
+            beta_del = diag["params_not_obsi"][:, diag["key_var_index"]]
+            scores, phase_label = _apply_direction_filter(
+                t_del=t_del, current_t=t_current,
+                current_beta=beta_current, beta_del=beta_del,
+                direction=direction,
+            )
+        else:
+            scores = np.abs(t_del)
+            phase_label = "none"
 
-        if abs(t_best) <= abs(t_current):
-            break
+        best_idx = int(np.argmax(scores))
+
+        if phase_label == "sign_flip":
+            if scores[best_idx] <= 0.0:
+                break
+        else:
+            t_best = float(t_del[best_idx])
+            if abs(t_best) <= abs(t_current):
+                break
 
         obs_orig_idx = int(df_remaining.iloc[best_idx]["__orig_idx__"])
         deleted_orig_indices.append(obs_orig_idx)
@@ -159,6 +177,7 @@ def run_iv_greedy(
         result = fit_iv(df_remaining, dependent_var, key_var, control_vars, endogenous_var, instruments)
         t_current = result["baseline"]["t_stat"]
         p_current = result["baseline"]["p_value"]
+        beta_current = result["baseline"]["beta"]
         f_current = result["baseline"]["stage1_f"]
 
         step = len(deletion_path) + 1
@@ -166,12 +185,20 @@ def run_iv_greedy(
             "step": step, "obs_id": int(obs_orig_idx),
             "t_after": round(float(t_current), 6),
             "p_after": round(float(p_current), 6),
+            "direction": phase_label,
         })
         spec_path.append({"n_del": step, "t": round(float(t_current), 6)})
         f_path.append({"n_del": step, "f": round(float(f_current), 4)})
 
     final_result = fit_iv(df_remaining, dependent_var, key_var, control_vars, endogenous_var, instruments)
     fb = final_result["baseline"]
+
+    if direction == "both":
+        direction_achieved = "both"
+    elif fb["beta"] >= 0:
+        direction_achieved = "positive"
+    else:
+        direction_achieved = "negative"
 
     return {
         "baseline": {
@@ -193,6 +220,7 @@ def run_iv_greedy(
             "r_squared": round(fb["r_squared"], 6),
             "deleted_obs": deleted_orig_indices,
             "n_deleted": len(deleted_orig_indices),
+            "direction_achieved": direction_achieved,
             "stage1_f": round(fb["stage1_f"], 4),
         },
         "spec_curves": [{

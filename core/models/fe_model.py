@@ -19,6 +19,7 @@ import statsmodels.api as sm
 import pyfixest as pf
 
 from core.influence import compute_deletion_t_values
+from core.greedy_search import _apply_direction_filter
 
 
 def _demean(df, y_col, x_cols, fe_vars):
@@ -115,6 +116,7 @@ def run_fe_greedy(
     significance_threshold: float,
     max_deletions_pct: float,
     check_fe_reestimate: bool = False,
+    direction: str = "both",
 ) -> dict:
     """Run greedy iterative deletion for FE model via FWL demeaned OLS.
 
@@ -142,6 +144,7 @@ def run_fe_greedy(
     baseline = result["baseline"]
     p_current = baseline["p_value"]
     t_current = baseline["t_stat"]
+    beta_current = baseline["beta"]
 
     spec_path = [{"n_del": 0, "t": round(t_current, 6)}]
     deletion_path = []
@@ -157,12 +160,27 @@ def run_fe_greedy(
             diag["key_var_index"],
         )
 
-        t_abs = np.abs(t_del)
-        best_idx_in_remaining = int(np.argmax(t_abs))
-        t_best = float(t_del[best_idx_in_remaining])
+        # Apply direction filter if needed
+        if direction != "both":
+            beta_del = diag["params_not_obsi"][:, diag["key_var_index"]]
+            scores, phase_label = _apply_direction_filter(
+                t_del=t_del, current_t=t_current,
+                current_beta=beta_current, beta_del=beta_del,
+                direction=direction,
+            )
+        else:
+            scores = np.abs(t_del)
+            phase_label = "none"
 
-        if abs(t_best) <= abs(t_current):
-            break
+        best_idx_in_remaining = int(np.argmax(scores))
+
+        if phase_label == "sign_flip":
+            if scores[best_idx_in_remaining] <= 0.0:
+                break
+        else:
+            t_best = float(t_del[best_idx_in_remaining])
+            if abs(t_best) <= abs(t_current):
+                break
 
         obs_orig_idx = int(df_remaining.iloc[best_idx_in_remaining]["__orig_idx__"])
         deleted_orig_indices.append(obs_orig_idx)
@@ -173,6 +191,7 @@ def run_fe_greedy(
         result = fit_fe(df_remaining, dependent_var, key_var, control_vars, fe_vars)
         t_current = result["baseline"]["t_stat"]
         p_current = result["baseline"]["p_value"]
+        beta_current = result["baseline"]["beta"]
 
         if check_fe_reestimate:
             try:
@@ -190,6 +209,7 @@ def run_fe_greedy(
             "obs_id": int(obs_orig_idx),
             "t_after": round(float(t_current), 6),
             "p_after": round(float(p_current), 6),
+            "direction": phase_label,
         })
         spec_path.append({
             "n_del": step,
@@ -199,6 +219,13 @@ def run_fe_greedy(
     # Final status
     final_result = fit_fe(df_remaining, dependent_var, key_var, control_vars, fe_vars)
     fb = final_result["baseline"]
+
+    if direction == "both":
+        direction_achieved = "both"
+    elif fb["beta"] >= 0:
+        direction_achieved = "positive"
+    else:
+        direction_achieved = "negative"
 
     return {
         "baseline": {
@@ -219,6 +246,7 @@ def run_fe_greedy(
             "r_squared": round(fb["r_squared"], 6),
             "deleted_obs": deleted_orig_indices,
             "n_deleted": len(deleted_orig_indices),
+            "direction_achieved": direction_achieved,
         },
         "spec_curves": [
             {

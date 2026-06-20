@@ -67,3 +67,72 @@ def test_greedy_deletion_obs_ids_are_unique():
 
     deleted = result["final"]["deleted_obs"]
     assert len(deleted) == len(set(deleted)), "Duplicate obs in deleted set"
+
+def test_direction_both_equals_original():
+    u"direction=both should produce identical results to not passing direction."
+    rng = np.random.default_rng(42)
+    n = 50
+    x = rng.normal(0, 1, n)
+    y = 2.0 * x + rng.normal(0, 0.5, n)
+    y[:3] = y[:3] + rng.normal(0, 5, 3)
+    df = pd.DataFrame({"y": y, "x": x})
+
+    result_default = greedy_deletion(df, "y", "x", [], 0.05, 10.0)
+    result_both = greedy_deletion(df, "y", "x", [], 0.05, 10.0, direction="both")
+
+    assert result_both["final"]["n_deleted"] == result_default["final"]["n_deleted"]
+    assert result_both["final"]["t_stat"] == result_default["final"]["t_stat"]
+    assert result_both["final"]["beta"] == result_default["final"]["beta"]
+    assert result_both["deletion_path"] == result_default["deletion_path"]
+    assert result_both["spec_curves"] == result_default["spec_curves"]
+
+
+
+
+def test_direction_positive_flip():
+    u"_apply_direction_filter sign_flip phase for positive direction."
+    from core.greedy_search import _apply_direction_filter as adf
+    t_del = np.array([1.5, 2.0, -1.0, 0.5, 3.0])
+    current_t = -0.5
+    current_beta = -0.8
+    beta_del = np.array([-0.3, 0.1, -0.9, -0.5, 0.3])
+    # direction=positive: delta = beta_del - current_beta
+    # = [0.5, 0.9, -0.1, 0.3, 1.1]
+    # Qualifying: 0,1,3,4. Best: 4 (delta=1.1)
+    scores, phase = adf(t_del, current_t, current_beta, beta_del, "positive")
+    assert phase == "sign_flip"
+    assert int(np.argmax(scores)) == 4
+    # Non-qualifying candidate gets score 0
+    assert scores[2] == 0.0
+    assert scores[4] > scores[1]  # best beats second-best
+
+
+def test_direction_negative_flip():
+    u"_apply_direction_filter sign_flip phase for negative direction."
+    from core.greedy_search import _apply_direction_filter as adf
+    t_del = np.array([1.5, -1.0, 0.5])
+    current_t = 0.5
+    current_beta = 0.8
+    beta_del = np.array([0.3, -0.2, 0.7])
+    # direction=negative: delta = current_beta - beta_del
+    # = [0.5, 1.0, 0.1]
+    # All qualify. Best: idx 1 (delta=1.0)
+    scores, phase = adf(t_del, current_t, current_beta, beta_del, "negative")
+    assert phase == "sign_flip"
+    assert int(np.argmax(scores)) == 1
+    assert np.all(scores >= 0)
+
+def test_direction_stops_when_no_candidates():
+    u"Direction filter eliminates all candidates; should not crash."
+    rng = np.random.default_rng(42)
+    n = 10
+    x = np.concatenate([rng.normal(-2.0, 0.3, 8), rng.normal(5.0, 0.3, 2)])
+    y = 5.0 + (-1.0) * x + rng.normal(0, 0.3, 10)
+    df = pd.DataFrame({"y": y, "x": x})
+
+    result = greedy_deletion(df, "y", "x", [], 0.05, 30.0, direction="positive")
+
+    assert "baseline" in result
+    assert "final" in result
+    assert isinstance(result["final"]["n_deleted"], int)
+    assert "direction_achieved" in result["final"]
