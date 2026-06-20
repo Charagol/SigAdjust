@@ -1,4 +1,4 @@
-﻿"""page_setup.py — Model configuration page for SigAdjust V2.
+"""page_setup.py — Model configuration page for SigAdjust V2.
 
 Provides the SetupPage (Tab 2) with multi-model form, variable conflict
 coordination, and configuration persistence. Coordinates all VariableSelector
@@ -12,6 +12,7 @@ Architecture:
 
 import json
 import os
+import pandas as pd
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QDialog, QTextEdit, QFrame, QSizePolicy, QFormLayout,
 )
 from ui.widgets.variable_selector import VariableSelector
+from ui.widgets.stata_parser import StataCommandParser
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -27,29 +29,172 @@ from ui.widgets.variable_selector import VariableSelector
 # ═════════════════════════════════════════════════════════════════════
 
 class StataImportDialog(QDialog):
-    """Placeholder dialog for Stata command import (Phase 11)."""
+    """Dialog for Stata command import: parse, validate, preview, fill form."""
 
-    def __init__(self, parent=None):
+    def __init__(self, viewmodel, setup_page, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Stata Import (Phase 11)")
-        self.resize(500, 300)
+        self._vm = viewmodel
+        self._setup_page = setup_page
+        self._parsed = None
+        self.setWindowTitle("Stata Command Import")
+        self.resize(620, 520)
+        self._setup_ui()
+        self._connect_signals()
+
+    def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Paste a Stata regression command below:"))
-        self._text_edit = QTextEdit()
-        self._text_edit.setPlaceholderText("e.g. reg y x c1 c2, robust")
-        layout.addWidget(self._text_edit)
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-        ok_btn = QPushButton("OK")
-        ok_btn.clicked.connect(self.accept)
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(self.reject)
-        btn_layout.addWidget(ok_btn)
-        btn_layout.addWidget(cancel_btn)
-        layout.addLayout(btn_layout)
+        info = QLabel(
+            "Paste a Stata regression command. Supported:\n"
+            "  reg/regress, logit, probit, ologit, oprobit, reghdfe\n"
+            "  Supports: i.var factor variables, absorb(), robust\n"
+            "  Not supported: ##, $macro, if/in/weight, cluster"
+        )
+        info.setStyleSheet("color: #6b7280; font-size: 12px; padding: 4px;")
+        info.setWordWrap(True)
+        layout.addWidget(info)
+        self._input = QTextEdit()
+        self._input.setPlaceholderText("Example: reg Y X c1 c2 i.industry, robust")
+        self._input.setMaximumHeight(80)
+        layout.addWidget(self._input)
+        btn_row = QHBoxLayout()
+        self._parse_btn = QPushButton("Parse")
+        self._parse_btn.setStyleSheet(
+            "QPushButton { background: #4f46e5; color: white; border: none;"
+            " border-radius: 4px; padding: 6px 16px; }"
+            " QPushButton:hover { background: #4338ca; }"
+        )
+        btn_row.addWidget(self._parse_btn)
+        self._cancel_btn = QPushButton("Cancel")
+        self._cancel_btn.clicked.connect(self.reject)
+        btn_row.addWidget(self._cancel_btn)
+        btn_row.addStretch()
+        layout.addLayout(btn_row)
+        self._msg_label = QLabel("")
+        self._msg_label.setWordWrap(True)
+        self._msg_label.setVisible(False)
+        layout.addWidget(self._msg_label)
+        self._preview = QGroupBox("Parsed Result")
+        self._preview.setVisible(False)
+        preview_layout = QVBoxLayout(self._preview)
+        self._preview_text = QLabel("")
+        self._preview_text.setWordWrap(True)
+        self._preview_text.setStyleSheet("font-size: 13px; padding: 4px;")
+        preview_layout.addWidget(self._preview_text)
+        self._confirm_btn = QPushButton("Confirm Import")
+        self._confirm_btn.setStyleSheet(
+            "QPushButton { background: #059669; color: white; border: none;"
+            " border-radius: 4px; padding: 8px 20px; font-size: 13px; }"
+            " QPushButton:hover { background: #047857; }"
+        )
+        preview_layout.addWidget(self._confirm_btn)
+        layout.addWidget(self._preview)
 
+    def _connect_signals(self):
+        self._parse_btn.clicked.connect(self._on_parse)
+        self._confirm_btn.clicked.connect(self._on_confirm)
 
-# ═════════════════════════════════════════════════════════════════════
+    def _on_parse(self):
+        text = self._input.toPlainText().strip()
+        if not text:
+            self._show_error("Please enter a command.")
+            return
+        result = StataCommandParser.parse(text)
+        self._parsed = result
+        if not result["success"]:
+            self._show_error(result["error"] or "Parse failed.")
+            return
+        df = self._vm.df
+        all_controls = list(result["control_vars"])
+        expanded_cols = []
+        if result["factor_vars"] and df is not None:
+            for fv in result["factor_vars"]:
+                if fv not in df.columns:
+                    self._show_error("Factor variable [" + fv + "] not found in dataset.")
+                    return
+                try:
+                    dummies = pd.get_dummies(df[fv], prefix="_C", drop_first=True)
+                    for col in dummies.columns:
+                        if col not in df.columns:
+                            df[col] = dummies[col]
+                        expanded_cols.append(col)
+                    all_controls.extend(expanded_cols)
+                except Exception as e:
+                    self._show_error("Failed to expand factor [" + fv + "]: " + str(e))
+                    return
+        result["control_vars"] = all_controls
+        result["_expanded_cols"] = expanded_cols
+        col_set = set(df.columns) if df is not None else set()
+        val_errors = []
+        if result["dependent_var"] and result["dependent_var"] not in col_set:
+            val_errors.append("Y variable [" + result["dependent_var"] + "] not in dataset")
+        if result["key_var"] and result["key_var"] not in col_set:
+            val_errors.append("X variable [" + result["key_var"] + "] not in dataset")
+        for ctrl in result["control_vars"]:
+            if ctrl not in col_set:
+                val_errors.append("Control variable [" + ctrl + "] not in dataset")
+        for fv in result["factor_vars"]:
+            if fv not in col_set:
+                val_errors.append("Factor variable [" + fv + "] not in dataset")
+        if val_errors:
+            self._show_error("\n".join(val_errors))
+            return
+        self._show_preview(result)
+
+    def _show_error(self, msg):
+        self._msg_label.setStyleSheet("color: #dc2626; font-size: 12px; padding: 4px;")
+        self._msg_label.setText(msg)
+        self._msg_label.setVisible(True)
+        self._preview.setVisible(False)
+
+    def _show_preview(self, result):
+        self._msg_label.setVisible(False)
+        lines = [
+            "  Model Type: " + result["model_type"].upper(),
+            "  Dependent Var (Y): " + result["dependent_var"],
+            "  Key Var (X): " + result["key_var"],
+        ]
+        if result["control_vars"]:
+            lines.append("  Controls: " + ", ".join(result["control_vars"]))
+        if result["factor_vars"]:
+            lines.append("  Factor Vars (expanded): " + ", ".join(result["factor_vars"]))
+        if result["fe_vars"]:
+            lines.append("  Fixed Effects: " + ", ".join(result["fe_vars"]))
+        if result["se_type"] == "robust":
+            lines.append("  Std Errors: robust")
+        if result.get("warning"):
+            lines.append("\n  Warning: " + result["warning"])
+        self._preview_text.setText("\n".join(lines))
+        self._preview.setVisible(True)
+
+    def _on_confirm(self):
+        if not self._parsed or not self._parsed["success"]:
+            return
+        p = self._parsed
+        sp = self._setup_page
+        while len(sp._model_cards) > 1:
+            sp._on_remove_model(len(sp._model_cards) - 1)
+        card = sp._model_cards[0]
+        card.y_selector.set_selected([])
+        card.x_selector.set_selected([])
+        card.control_selector.set_selected([])
+        type_map = {"ols": 0, "logit": 1, "probit": 2, "fe": 3}
+        idx = type_map.get(p["model_type"], 0)
+        card._type_combo.setCurrentIndex(idx)
+        if p["dependent_var"]:
+            card.y_selector.set_selected([p["dependent_var"]])
+        if p["key_var"]:
+            card.x_selector.set_selected([p["key_var"]])
+        if p["control_vars"]:
+            card.control_selector.set_selected(p["control_vars"])
+        if p["model_type"] == "fe" and p["fe_vars"]:
+            card.fe_selector.set_selected(p["fe_vars"])
+        sp._update_all_control_items()
+        if p.get("_expanded_cols"):
+            from core.validation import get_missing_summary
+            sp._vm._columns_info = get_missing_summary(sp._vm.df)
+        card._name_input.setText("Stata_" + p["model_type"])
+        self.accept()
+
 #  ModelCard
 # ═════════════════════════════════════════════════════════════════════
 
@@ -607,7 +752,7 @@ class SetupPage(QWidget):
 
     def _on_stata_import(self):
         """Open the Stata import placeholder dialog."""
-        dialog = StataImportDialog(self)
+        dialog = StataImportDialog(self._vm, self)
         dialog.exec()
 
     def _on_save_config(self):
