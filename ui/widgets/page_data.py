@@ -71,7 +71,7 @@ class DataPage(QWidget):
         # Stats cards
         stats_layout = QHBoxLayout()
         self._stats_cards = {}
-        for label_text in ("行数", "列数", "文件格式"):
+        for key, label_text in [("rows", "行数"), ("columns", "列数"), ("format", "文件格式")]:
             card = QFrame()
             card.setFixedHeight(60)
             card.setMinimumWidth(120)
@@ -93,7 +93,7 @@ class DataPage(QWidget):
             value.setStyleSheet("color: #111827; font-size: 16px; font-weight: bold;")
             card_layout.addWidget(value)
 
-            self._stats_cards[label_text.lower()] = value
+            self._stats_cards[key] = value
             stats_layout.addWidget(card)
 
         file_layout.addLayout(stats_layout)
@@ -222,14 +222,23 @@ class DataPage(QWidget):
         """Update the stats summary cards."""
         try:
             self._stats_cards["rows"].setText(f"{len(df):,}")
-            self._stats_cards["columns"].setText(f"{len(df.columns):,}")
-            ext = os.path.splitext(filepath)[1].upper().lstrip(".")
-            self._stats_cards["file"].setText(ext)
         except Exception:
-            pass  # graceful degradation: stats cards non-critical
+            pass
+        try:
+            self._stats_cards["columns"].setText(f"{len(df.columns):,}")
+        except Exception:
+            pass
+        try:
+            ext = os.path.splitext(filepath)[1].upper().lstrip(".")
+            self._stats_cards["format"].setText(ext)
+        except Exception:
+            pass
 
-    def _clear_tables(self):
-        """Clear preview and column info tables."""
+    def _clear_preview(self):
+        """Clear all data display panels to empty state."""
         self._preview_table.setRowCount(0)
         self._preview_table.setColumnCount(0)
         self._info_table.setRowCount(0)
+        for key in self._stats_cards:
+            self._stats_cards[key].setText("--")
+        self._filepath_label.setText("")

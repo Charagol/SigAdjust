@@ -35,6 +35,7 @@ class SigAdjustViewModel(QObject):
         self._config: dict | None = None
         self._results: dict | None = None
         self._filepath: str | None = None
+        self._last_load_error: str = ""
 
     # ── Properties ───────────────────────────────────────────────────
 
@@ -51,6 +52,11 @@ class SigAdjustViewModel(QObject):
         Produced by core.validation.get_missing_summary().
         """
         return self._columns_info
+
+    @property
+    def last_load_error(self) -> str:
+        """Last error message from load_data()."""
+        return self._last_load_error
 
     @property
     def config(self) -> dict | None:
@@ -98,6 +104,7 @@ class SigAdjustViewModel(QObject):
         ext = os.path.splitext(filepath)[1].lower()
 
         try:
+            # Step 1: attempt loading before modifying any state
             if ext == ".csv":
                 df = pd.read_csv(filepath)
             elif ext == ".dta":
@@ -110,18 +117,26 @@ class SigAdjustViewModel(QObject):
             if df.empty:
                 return False
 
-            # Compute column metadata using core validation utility
+            # Step 2: compute metadata
             from core.validation import get_missing_summary
             columns_info = get_missing_summary(df)
 
+            # Step 3: atomically update state after all checks pass
             self._df = df
             self._columns_info = columns_info
             self._filepath = filepath
+            self._last_load_error = ""
 
             self.data_loaded.emit(df)
             return True
 
-        except Exception:
+        except Exception as e:
+            # On failure: clear stale state and notify UI
+            self._df = None
+            self._columns_info = {}
+            self._filepath = None
+            self._last_load_error = str(e)
+            self.data_loaded.emit(None)
             return False
 
     def run_calculation(self) -> None:

@@ -518,10 +518,14 @@ class SetupPage(QWidget):
         self._max_pct_spin.setFixedWidth(80)
         global_layout.addWidget(self._max_pct_spin)
 
-        global_layout.addWidget(QLabel("方向:"))
+        self._direction_checkbox = QCheckBox("启用方向控制")
         self._direction_combo = QComboBox()
-        self._direction_combo.addItems(["both", "positive", "negative"])
-        self._direction_combo.setCurrentIndex(0)
+        self._direction_combo.addItems(DIRECTION_OPTIONS)
+        self._direction_combo.setMinimumWidth(100)
+        self._direction_combo.setVisible(False)
+        self._direction_checkbox.toggled.connect(self._direction_combo.setVisible)
+        self._direction_checkbox.setChecked(False)
+        global_layout.addWidget(self._direction_checkbox)
         global_layout.addWidget(self._direction_combo)
 
         global_layout.addStretch()
