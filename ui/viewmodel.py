@@ -1,4 +1,4 @@
-﻿"""SigAdjust ViewModel — single source of truth for all application state.
+"""SigAdjust ViewModel — single source of truth for all application state.
 
 This ViewModel acts as a bridge between core/ computation and UI widgets.
 It holds all shared state as QObject properties and uses Qt Signal/Slot
@@ -9,7 +9,7 @@ to ViewModel signals and access its properties.
 import json
 import os
 import pandas as pd
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QThread, Signal
 
 
 class SigAdjustViewModel(QObject):
@@ -125,11 +125,32 @@ class SigAdjustViewModel(QObject):
             return False
 
     def run_calculation(self) -> None:
-        """Run the full computation pipeline (placeholder).
+        """Run the full computation pipeline in a background QThread."""
+        if self._config is None or self._df is None:
+            return
+        from ui.widgets.page_progress import ComputationWorker
+        config = dict(self._config)
+        config["df"] = self._df
+        self._thread = QThread(self)
+        self._worker = ComputationWorker(config)
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.finished.connect(self._on_calculation_finished)
+        self._worker.error.connect(self._on_calculation_error)
+        self._worker.progress.connect(self.progress_updated.emit)
+        self._worker.finished.connect(self._thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
+        self._thread.finished.connect(self._thread.deleteLater)
+        self._thread.start()
 
-        Will be implemented in Phase 12 with QThread-based execution.
-        """
-        pass
+    def _on_calculation_finished(self, result: dict):
+        """Handle pipeline completion."""
+        self._results = result
+        self.calculation_finished.emit(result)
+
+    def _on_calculation_error(self, msg: str):
+        """Handle pipeline error."""
+        self.calculation_error.emit(msg)
 
     def save_config(self, path: str) -> None:
         """Save current config to a JSON file."""

@@ -1,4 +1,4 @@
-﻿"""MainWindow — Main application window for SigAdjust V2.
+"""MainWindow — Main application window for SigAdjust V2.
 
 Contains a QTabWidget with 4 tabs:
   1. Data Import (DataPage)
@@ -14,6 +14,8 @@ from PySide6.QtWidgets import (
 )
 from ui.widgets.page_data import DataPage
 from ui.widgets.page_setup import SetupPage
+from ui.widgets.page_progress import ComputationProgressPage
+from ui.widgets.page_results import ResultsPage
 
 
 class MainWindow(QMainWindow):
@@ -71,13 +73,13 @@ class MainWindow(QMainWindow):
         self._setup_page = SetupPage(self._vm, self)
         self._tab_widget.addTab(self._setup_page, "Model Setup")
 
-        # Tab 3: Computation progress (placeholder)
-        placeholder_progress = self._make_placeholder("Computation progress will be implemented in Phase 12")
-        self._tab_widget.addTab(placeholder_progress, "Computation")
+        # Tab 3: Computation progress
+        self._progress_page = ComputationProgressPage(self._vm, self)
+        self._tab_widget.addTab(self._progress_page, "Computation")
 
-        # Tab 4: Results display (placeholder)
-        placeholder_results = self._make_placeholder("Results display will be implemented in Phase 12")
-        self._tab_widget.addTab(placeholder_results, "Results")
+        # Tab 4: Results display
+        self._results_page = ResultsPage(self._vm)
+        self._tab_widget.addTab(self._results_page, "Results")
 
         self.setCentralWidget(self._tab_widget)
 

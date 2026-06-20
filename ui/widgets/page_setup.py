@@ -870,6 +870,7 @@ class SetupPage(QWidget):
         # The setter already emits config_changed
 
         # Switch to Tab 3 (Computation / index 2)
+        self._vm.run_calculation()
         self._main_window.switch_to_tab(2)
 
     def set_test_mode(self, enabled: bool):
